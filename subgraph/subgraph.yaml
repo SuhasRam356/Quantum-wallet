@@ -8,7 +8,7 @@ dataSources:
     name: QuantumSmartWallet
     network: sepolia
     source:
-      address: "0xad5521324f8466048898d074350df6A4c39fc681"
+      address: "0x6F0d410f7f0514A65fAB25431F61f4eDdf898c3A"
       abi: QuantumSmartWallet
       startBlock: 11450631
     mapping:

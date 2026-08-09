@@ -74,7 +74,7 @@ export default function TransferPage() {
       writeContract({
         address: CONTRACT_ADDRESS,
         abi: CONTRACT_ABI,
-        functionName: 'executeTransaction',
+        functionName: 'execute',
         args: [
           toAddress,
           parseEther(amount),

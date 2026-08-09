@@ -17,7 +17,9 @@ async function main() {
   const factory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, wallet);
   
   console.log("Deploying QuantumSmartWallet...");
-  const contract = await factory.deploy("mock_dilithium_public_key_12345", wallet.address);
+  const ENTRY_POINT = "0x0000000071727de22e5e9d8baf0edac6f37da032";
+  const placeholderHash = ethers.keccak256(ethers.toUtf8Bytes("placeholder_pqc_key_pending_registration"));
+  const contract = await factory.deploy(ENTRY_POINT, placeholderHash, wallet.address);
   await contract.waitForDeployment();
   
   const address = await contract.getAddress();
