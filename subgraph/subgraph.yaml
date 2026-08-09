@@ -1,0 +1,28 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: QuantumSmartWallet
+    network: sepolia
+    source:
+      address: "0x70FD82dc37FF1aB76eeB9d577bbC3f846a12464a"
+      abi: QuantumSmartWallet
+      startBlock: 11450300
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Transaction
+      abis:
+        - name: QuantumSmartWallet
+          file: ./abis/QuantumSmartWallet.json
+      eventHandlers:
+        - event: Executed(indexed address,uint256,bytes)
+          handler: handleExecuted
+        - event: Deposited(indexed address,uint256)
+          handler: handleDeposited
+      file: ./src/mapping.ts
