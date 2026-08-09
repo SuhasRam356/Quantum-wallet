@@ -8,3 +8,23 @@ type Transaction @entity {
   blockNumber: BigInt!
   transactionHash: Bytes!
 }
+
+type Identity @entity {
+  id: Bytes!
+  ipfsCid: String!
+  updatedAt: BigInt!
+}
+
+type VaultFile @entity {
+  id: ID!
+  user: Bytes!
+  ipfsCid: String!
+  addedAt: BigInt!
+}
+
+type Guardian @entity {
+  id: ID!
+  user: Bytes!
+  guardianAddress: Bytes!
+  addedAt: BigInt!
+}

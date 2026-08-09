@@ -1,12 +1,18 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useWriteContract } from 'wagmi';
 import { formatEther } from 'ethers';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/utils/constants';
 
 export default function SecurityPage() {
   const { address } = useAccount();
+  const { writeContractAsync } = useWriteContract();
+  
   const [loading, setLoading] = useState(true);
+  const [guardians, setGuardians] = useState([]);
+  const [newGuardian, setNewGuardian] = useState("");
+  const [addingGuardian, setAddingGuardian] = useState(false);
   
   // Real settings from localStorage
   const [settings, setSettings] = useState({
@@ -28,7 +34,6 @@ export default function SecurityPage() {
       try {
         let dynamicLogs = [];
         
-        // 1. Connection Event (Login)
         if (address) {
           dynamicLogs.push({
             id: 'login',
@@ -39,7 +44,6 @@ export default function SecurityPage() {
           });
         }
 
-        // 2. Fetch real transactions from Subgraph for "Transaction Signed"
         if (address) {
           const SUBGRAPH_URL = "https://api.studio.thegraph.com/query/1757567/quantum/version/latest";
           const graphqlQuery = `
@@ -54,7 +58,15 @@ export default function SecurityPage() {
                 type
                 amount
                 date
-                transactionHash
+              }
+              guardians(
+                first: 5,
+                orderBy: addedAt,
+                orderDirection: desc,
+                where: { user: "${address.toLowerCase()}" }
+              ) {
+                guardianAddress
+                addedAt
               }
             }
           `;
@@ -75,14 +87,15 @@ export default function SecurityPage() {
               time: new Date(Number(tx.date) * 1000).toLocaleString(),
               status: 'Success'
             }));
-            
             dynamicLogs = [...dynamicLogs, ...txLogs];
+          }
+          
+          if (gqlData.data && gqlData.data.guardians) {
+            setGuardians(gqlData.data.guardians);
           }
         }
         
-        // 3. Load locally saved biometric events
         const savedLogs = JSON.parse(localStorage.getItem('quantum_security_logs') || '[]');
-        
         setLogs([...savedLogs, ...dynamicLogs]);
         setLoading(false);
       } catch (err) {
@@ -99,7 +112,6 @@ export default function SecurityPage() {
     setSettings(newSettings);
     localStorage.setItem('quantum_security_settings', JSON.stringify(newSettings));
     
-    // Add log
     const newLog = {
       id: Date.now(),
       event: `Biometric Login ${newStatus ? 'Enabled' : 'Disabled'}`,
@@ -109,11 +121,31 @@ export default function SecurityPage() {
     };
     
     const savedLogs = JSON.parse(localStorage.getItem('quantum_security_logs') || '[]');
-    const updatedLogs = [newLog, ...savedLogs];
-    localStorage.setItem('quantum_security_logs', JSON.stringify(updatedLogs));
-    
+    localStorage.setItem('quantum_security_logs', JSON.stringify([newLog, ...savedLogs]));
     setLogs(prev => [newLog, ...prev]);
   };
+  
+  const handleAddGuardian = async () => {
+    if(!newGuardian) return;
+    if(!address) { alert("Connect wallet first!"); return; }
+    
+    setAddingGuardian(true);
+    try {
+      await writeContractAsync({
+          address: CONTRACT_ADDRESS,
+          abi: CONTRACT_ABI,
+          functionName: 'addGuardian',
+          args: [newGuardian],
+      });
+      alert("Guardian transaction sent!");
+      setGuardians([{ guardianAddress: newGuardian, addedAt: Math.floor(Date.now()/1000) }, ...guardians]);
+      setNewGuardian("");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add guardian");
+    }
+    setAddingGuardian(false);
+  }
 
   if (loading) {
     return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading real-time security data...</div>;
@@ -158,19 +190,45 @@ export default function SecurityPage() {
                     transition: 'left 0.3s ease'
                   }}></div>
                 </div>
-
-              </div>
-              <div style={{ height: '1px', background: 'var(--surface-border)' }}></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>Two-Factor Authentication (2FA)</div>
-                  <div className="text-muted" style={{ fontSize: '0.85rem' }}>App-based authenticator</div>
-                </div>
-                <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.85rem' }} onClick={() => alert("2FA Setup Modal would open here.")}>
-                  {settings.twoFactorEnabled ? 'Manage' : 'Configure'}
-                </button>
               </div>
             </div>
+          </div>
+          
+          {/* NEW SOCIAL RECOVERY SECTION */}
+          <div className="glass-card" style={{ borderLeft: '4px solid #ff0055' }}>
+            <h3 className="heading-md" style={{ color: '#ff0055' }}>Quantum Social Recovery</h3>
+            <p className="text-muted" style={{ fontSize: '0.9rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
+              Add trusted guardian addresses. If you ever lose your post-quantum private key, these guardians can collaborate to decrypt your IPFS vault backups.
+            </p>
+            
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              <input 
+                type="text" 
+                placeholder="0x... Guardian Address" 
+                value={newGuardian}
+                onChange={(e) => setNewGuardian(e.target.value)}
+                style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--surface-border)', background: 'rgba(0,0,0,0.3)', color: 'white' }}
+              />
+              <button 
+                className="btn-primary" 
+                onClick={handleAddGuardian} 
+                disabled={addingGuardian}
+                style={{ background: '#ff0055', borderColor: '#ff0055', padding: '8px 16px' }}
+              >
+                {addingGuardian ? 'Adding...' : 'Add'}
+              </button>
+            </div>
+            
+            {guardians.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <h4 style={{ color: 'var(--text-secondary)' }}>Trusted Guardians:</h4>
+                {guardians.map((g, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '4px' }}>
+                    <span style={{ fontFamily: 'monospace' }}>{g.guardianAddress}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="glass-card">

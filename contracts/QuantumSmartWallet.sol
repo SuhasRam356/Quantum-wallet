@@ -12,8 +12,18 @@ contract QuantumSmartWallet {
     string public pqcPublicKey;
     address public owner; // The "relayer" account that broadcasts the transaction
 
+    // --- New Features (IPFS & Access Control) ---
+    mapping(address => string) public userIdentities;
+    mapping(address => string[]) public encryptedVaultFiles;
+    mapping(address => address[]) public guardians;
+
     event Executed(address indexed target, uint256 value, bytes data);
     event Deposited(address indexed sender, uint256 amount);
+    
+    // New Events
+    event IdentityUpdated(address indexed user, string ipfsCid);
+    event VaultFileAdded(address indexed user, string ipfsCid);
+    event GuardianAdded(address indexed user, address indexed guardian);
 
     constructor(string memory _pqcPublicKey, address _initialOwner) {
         pqcPublicKey = _pqcPublicKey;
@@ -22,6 +32,23 @@ contract QuantumSmartWallet {
 
     receive() external payable {
         emit Deposited(msg.sender, msg.value);
+    }
+
+    // --- IPFS & Social Recovery Functions ---
+
+    function setIdentity(string calldata cid) external {
+        userIdentities[msg.sender] = cid;
+        emit IdentityUpdated(msg.sender, cid);
+    }
+
+    function addVaultFile(string calldata cid) external {
+        encryptedVaultFiles[msg.sender].push(cid);
+        emit VaultFileAdded(msg.sender, cid);
+    }
+
+    function addGuardian(address guardian) external {
+        guardians[msg.sender].push(guardian);
+        emit GuardianAdded(msg.sender, guardian);
     }
 
     /**
