@@ -1,11 +1,16 @@
-import "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-toolbox";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 export default {
-  solidity: "0.8.24",
+  solidity: {
+    version: "0.8.24",
+    settings: {
+      evmVersion: "cancun",
+    }
+  },
   networks: {
     sepolia: {
       type: "http",

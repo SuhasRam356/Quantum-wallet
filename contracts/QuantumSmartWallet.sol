@@ -1,24 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@account-abstraction/contracts/interfaces/IAccount.sol";
+import "@account-abstraction/contracts/interfaces/PackedUserOperation.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+
 /**
  * @title QuantumSmartWallet
- * @dev A smart contract wallet secured by a Post-Quantum keypair (ML-DSA / FIPS-204).
+ * @dev A smart contract wallet secured by a Hybrid Post-Quantum architecture (ERC-4337).
  *
  * Architecture:
- *   1. The owner generates an ML-DSA-65 keypair client-side using noble/post-quantum.
- *   2. The keccak256 hash of the public key is stored on-chain as a commitment.
- *   3. To execute a transaction, the caller must provide the full public key bytes.
- *      The contract verifies keccak256(pubKey) == stored commitment.
- *   4. Full ML-DSA signature verification happens off-chain (server-side) before
- *      the relayer submits the transaction, since the EVM lacks lattice-math precompiles.
- *
- * This hybrid design ensures every transaction is cryptographically bound to the
- * holder of the ML-DSA private key, while keeping on-chain gas costs minimal.
+ *   1. validateUserOp (ECDSA): Secures the gas payment. Uses a standard ECDSA signature 
+ *      to pass bundler simulation and prevent gas griefing.
+ *   2. execute (ML-DSA Hash Commitment): Secures the assets. The transaction payload must 
+ *      include the correct ML-DSA public key bytes that match the on-chain keccak256 commitment.
+ *   3. Off-Chain (Server): Full ML-DSA signature verification is performed off-chain before 
+ *      the bundler submits the UserOperation.
  */
-contract QuantumSmartWallet {
+contract QuantumSmartWallet is IAccount {
+    using ECDSA for bytes32;
+
+    address public immutable entryPoint;
     bytes32 public pqcPubKeyHash;   // keccak256 commitment of the ML-DSA public key
-    address public owner;           // The relayer account that broadcasts transactions
+    address public owner;           // ECDSA owner for validating UserOps (gas protection)
 
     // --- IPFS & Access Control ---
     mapping(address => string) public userIdentities;
@@ -34,7 +39,13 @@ contract QuantumSmartWallet {
     event VaultFileAdded(address indexed user, string ipfsCid);
     event GuardianAdded(address indexed user, address indexed guardian);
 
-    constructor(bytes32 _pqcPubKeyHash, address _initialOwner) {
+    modifier requireEntryPoint() {
+        require(msg.sender == entryPoint, "Only EntryPoint can call this");
+        _;
+    }
+
+    constructor(address _entryPoint, bytes32 _pqcPubKeyHash, address _initialOwner) {
+        entryPoint = _entryPoint;
         pqcPubKeyHash = _pqcPubKeyHash;
         owner = _initialOwner;
     }
@@ -43,58 +54,71 @@ contract QuantumSmartWallet {
         emit Deposited(msg.sender, msg.value);
     }
 
+    // --- ERC-4337 Account Abstraction ---
+
+    /**
+     * @dev Validates the user's signature and nonce. 
+     *      Uses standard ECDSA to authorize the gas payment via the EntryPoint.
+     */
+    function validateUserOp(
+        PackedUserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 missingAccountFunds
+    ) external override requireEntryPoint returns (uint256 validationData) {
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
+        address signer = hash.recover(userOp.signature);
+        
+        if (signer != owner) {
+            return 1; // SIG_VALIDATION_FAILED
+        }
+
+        if (missingAccountFunds > 0) {
+            (bool success, ) = payable(msg.sender).call{value: missingAccountFunds, gas: type(uint256).max}("");
+            (success); // ignore failure, entrypoint will revert if not paid
+        }
+
+        return 0; // SIG_VALIDATION_SUCCESS
+    }
+
     // --- PQC Key Management ---
 
     /**
-     * @dev Updates the PQC public key hash commitment. Only the owner can call this.
-     * @param newHash The keccak256 hash of the new ML-DSA public key.
+     * @dev Updates the PQC public key hash commitment.
+     *      Can only be called via a valid UserOperation from the EntryPoint.
      */
-    function setPqcPublicKeyHash(bytes32 newHash) external {
-        require(msg.sender == owner, "Only owner can update PQC key");
+    function setPqcPublicKeyHash(bytes32 newHash) external requireEntryPoint {
         pqcPubKeyHash = newHash;
         emit PqcKeyUpdated(newHash);
     }
 
     // --- IPFS & Social Recovery Functions ---
 
-    function setIdentity(string calldata cid) external {
-        userIdentities[msg.sender] = cid;
-        emit IdentityUpdated(msg.sender, cid);
+    function setIdentity(string calldata cid) external requireEntryPoint {
+        userIdentities[owner] = cid;
+        emit IdentityUpdated(owner, cid);
     }
 
-    function addVaultFile(string calldata cid) external {
-        encryptedVaultFiles[msg.sender].push(cid);
-        emit VaultFileAdded(msg.sender, cid);
+    function addVaultFile(string calldata cid) external requireEntryPoint {
+        encryptedVaultFiles[owner].push(cid);
+        emit VaultFileAdded(owner, cid);
     }
 
-    function addGuardian(address guardian) external {
-        guardians[msg.sender].push(guardian);
-        emit GuardianAdded(msg.sender, guardian);
+    function addGuardian(address guardian) external requireEntryPoint {
+        guardians[owner].push(guardian);
+        emit GuardianAdded(owner, guardian);
     }
 
     /**
-     * @dev Executes a transaction if:
-     *   1. The caller is the owner (relayer access control).
-     *   2. The provided PQC public key's keccak256 hash matches the stored commitment.
-     *
-     * Full ML-DSA signature verification is performed off-chain by the server API
-     * before the relayer submits this transaction. The on-chain hash commitment
-     * ensures the transaction is bound to the correct PQ identity.
-     *
-     * @param target  The address to send ETH to.
-     * @param value   The amount of ETH to send (in wei).
-     * @param data    Arbitrary calldata for contract interactions.
-     * @param pqcPubKey The full ML-DSA public key bytes (verified via hash commitment).
+     * @dev Executes a transaction. 
+     *      Must be called via a valid UserOperation from the EntryPoint (ECDSA verified).
+     *      Additionally enforces the PQC public key hash commitment to secure the assets.
      */
-    function executeTransaction(
+    function execute(
         address target,
         uint256 value,
         bytes calldata data,
         bytes calldata pqcPubKey
-    ) external returns (bytes memory) {
-        // Access control: only the owner/relayer can submit
-        require(msg.sender == owner, "Only owner/relayer can submit");
-
+    ) external requireEntryPoint returns (bytes memory) {
         // Hash commitment verification: caller must know the real PQ public key
         require(
             keccak256(pqcPubKey) == pqcPubKeyHash,
@@ -108,4 +132,5 @@ contract QuantumSmartWallet {
         return result;
     }
 }
+
 
