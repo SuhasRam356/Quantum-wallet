@@ -1,0 +1,42 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_24-01a58dd325d7c547052b54da21b827073e45246c",
+  "solcVersion": "0.8.24",
+  "solcLongVersion": "0.8.24+commit.e11b9ed9",
+  "compilerType": "solc",
+  "userSourceNameMap": {
+    "contracts/QuantumSmartWallet.sol": "project/contracts/QuantumSmartWallet.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/QuantumSmartWallet.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n/**\n * @title QuantumSmartWallet\n * @dev A mockup smart contract wallet designed to be controlled by a Post-Quantum Keypair.\n * For this proof of concept, since true ML-DSA verification on the EVM requires precompiles\n * or massive gas limits, we are simulating the signature verification step, focusing on the \n * Web3 connection architecture.\n */\ncontract QuantumSmartWallet {\n    string public pqcPublicKey;\n    address public owner; // The \"relayer\" account that broadcasts the transaction\n\n    // --- New Features (IPFS & Access Control) ---\n    mapping(address => string) public userIdentities;\n    mapping(address => string[]) public encryptedVaultFiles;\n    mapping(address => address[]) public guardians;\n\n    event Executed(address indexed target, uint256 value, bytes data);\n    event Deposited(address indexed sender, uint256 amount);\n    \n    // New Events\n    event IdentityUpdated(address indexed user, string ipfsCid);\n    event VaultFileAdded(address indexed user, string ipfsCid);\n    event GuardianAdded(address indexed user, address indexed guardian);\n\n    constructor(string memory _pqcPublicKey, address _initialOwner) {\n        pqcPublicKey = _pqcPublicKey;\n        owner = _initialOwner;\n    }\n\n    receive() external payable {\n        emit Deposited(msg.sender, msg.value);\n    }\n\n    // --- IPFS & Social Recovery Functions ---\n\n    function setIdentity(string calldata cid) external {\n        userIdentities[msg.sender] = cid;\n        emit IdentityUpdated(msg.sender, cid);\n    }\n\n    function addVaultFile(string calldata cid) external {\n        encryptedVaultFiles[msg.sender].push(cid);\n        emit VaultFileAdded(msg.sender, cid);\n    }\n\n    function addGuardian(address guardian) external {\n        guardians[msg.sender].push(guardian);\n        emit GuardianAdded(msg.sender, guardian);\n    }\n\n    /**\n     * @dev Executes a transaction if the provided PQC signature is valid.\n     * In a production ERC-4337 environment, this would be `validateUserOp`.\n     */\n    function executeTransaction(\n        address target,\n        uint256 value,\n        bytes calldata data,\n        bytes calldata pqcSignature\n    ) external returns (bytes memory) {\n        // REQUIREMENT: The relayer or owner is submitting this (so they pay gas)\n        require(msg.sender == owner, \"Only owner/relayer can submit\");\n\n        // NOTE: Here is where the intensive ML-DSA on-chain verification would happen.\n        // require(verifyPQCSignature(data, pqcSignature, pqcPublicKey), \"Invalid PQC Signature\");\n        \n        // Mock verification: As long as a signature string is provided, we proceed.\n        require(pqcSignature.length > 0, \"PQC Signature required\");\n\n        (bool success, bytes memory result) = target.call{value: value}(data);\n        require(success, \"Transaction execution failed\");\n\n        emit Executed(target, value, data);\n        return result;\n    }\n}\n"
+      }
+    }
+  }
+}

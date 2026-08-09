@@ -88,7 +88,7 @@ export default function Dashboard() {
       });
       const json = await res.json();
       if (json.success) {
-        alert("Success! Beamed 10 ETH to your wallet.");
+        alert("Success! Beamed 0.005 ETH to your wallet.");
       } else {
         alert("Failed to fund: " + json.error);
       }
@@ -171,17 +171,23 @@ export default function Dashboard() {
           <h3 className="heading-md">Recent Activity</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
             
-            {data.recentTransactions.map((tx, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: i === data.recentTransactions.length - 1 ? 'none' : '1px solid var(--surface-border)' }}>
-                <div>
-                  <p style={{ fontWeight: 600 }}>{tx.type}</p>
-                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>{tx.date}</p>
+            {data.recentTransactions && data.recentTransactions.length > 0 ? (
+              data.recentTransactions.map((tx, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: i === data.recentTransactions.length - 1 ? 'none' : '1px solid var(--surface-border)' }}>
+                  <div>
+                    <p style={{ fontWeight: 600 }}>{tx.type}</p>
+                    <p className="text-muted" style={{ fontSize: '0.85rem' }}>{tx.date}</p>
+                  </div>
+                  <div style={{ fontWeight: 600, color: tx.amount.startsWith('+') ? '#00ff88' : 'white' }}>
+                    {tx.amount}
+                  </div>
                 </div>
-                <div style={{ fontWeight: 600, color: tx.amount.startsWith('+') ? '#00ff88' : 'white' }}>
-                  {tx.amount}
-                </div>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-secondary)' }}>
+                No recent activity found on this network.
               </div>
-            ))}
+            )}
 
           </div>
         </div>

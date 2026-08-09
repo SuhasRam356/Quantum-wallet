@@ -62,7 +62,7 @@ contract QuantumSmartWallet {
         bytes calldata pqcSignature
     ) external returns (bytes memory) {
         // REQUIREMENT: The relayer or owner is submitting this (so they pay gas)
-        // require(msg.sender == owner, "Only owner/relayer can submit"); // Disabled for PoC testing so you can use any wallet!
+        require(msg.sender == owner, "Only owner/relayer can submit");
 
         // NOTE: Here is where the intensive ML-DSA on-chain verification would happen.
         // require(verifyPQCSignature(data, pqcSignature, pqcPublicKey), "Invalid PQC Signature");
