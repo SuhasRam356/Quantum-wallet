@@ -1,18 +1,10 @@
-export const CONTRACT_ADDRESS = "0xad5521324f8466048898d074350df6A4c39fc681";
+export const CONTRACT_ADDRESS = "0x12E865E0D90E9eD0bF4dB68D2D3657b8Fc215AAD";
 
 export const CONTRACT_ABI = [
   {
     "inputs": [
-      {
-        "internalType": "string",
-        "name": "_pqcPublicKey",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "_initialOwner",
-        "type": "address"
-      }
+      { "internalType": "bytes32", "name": "_pqcPubKeyHash", "type": "bytes32" },
+      { "internalType": "address", "name": "_initialOwner", "type": "address" }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -20,18 +12,8 @@ export const CONTRACT_ABI = [
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
+      { "indexed": true, "internalType": "address", "name": "sender", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
     ],
     "name": "Deposited",
     "type": "event"
@@ -39,24 +21,9 @@ export const CONTRACT_ABI = [
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "target",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      }
+      { "indexed": true, "internalType": "address", "name": "target", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" },
+      { "indexed": false, "internalType": "bytes", "name": "data", "type": "bytes" }
     ],
     "name": "Executed",
     "type": "event"
@@ -64,18 +31,8 @@ export const CONTRACT_ABI = [
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "guardian",
-        "type": "address"
-      }
+      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": true, "internalType": "address", "name": "guardian", "type": "address" }
     ],
     "name": "GuardianAdded",
     "type": "event"
@@ -83,18 +40,8 @@ export const CONTRACT_ABI = [
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "ipfsCid",
-        "type": "string"
-      }
+      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "string", "name": "ipfsCid", "type": "string" }
     ],
     "name": "IdentityUpdated",
     "type": "event"
@@ -102,43 +49,29 @@ export const CONTRACT_ABI = [
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "ipfsCid",
-        "type": "string"
-      }
+      { "indexed": true, "internalType": "bytes32", "name": "newHash", "type": "bytes32" }
+    ],
+    "name": "PqcKeyUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "string", "name": "ipfsCid", "type": "string" }
     ],
     "name": "VaultFileAdded",
     "type": "event"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "guardian",
-        "type": "address"
-      }
-    ],
+    "inputs": [{ "internalType": "address", "name": "guardian", "type": "address" }],
     "name": "addGuardian",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "cid",
-        "type": "string"
-      }
-    ],
+    "inputs": [{ "internalType": "string", "name": "cid", "type": "string" }],
     "name": "addVaultFile",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -146,141 +79,68 @@ export const CONTRACT_ABI = [
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
+      { "internalType": "address", "name": "", "type": "address" },
+      { "internalType": "uint256", "name": "", "type": "uint256" }
     ],
     "name": "encryptedVaultFiles",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "target",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "pqcSignature",
-        "type": "bytes"
-      }
+      { "internalType": "address", "name": "target", "type": "address" },
+      { "internalType": "uint256", "name": "value", "type": "uint256" },
+      { "internalType": "bytes", "name": "data", "type": "bytes" },
+      { "internalType": "bytes", "name": "pqcPubKey", "type": "bytes" }
     ],
     "name": "executeTransaction",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
+    "outputs": [{ "internalType": "bytes", "name": "", "type": "bytes" }],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
+      { "internalType": "address", "name": "", "type": "address" },
+      { "internalType": "uint256", "name": "", "type": "uint256" }
     ],
     "name": "guardians",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "pqcPublicKey",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
+    "name": "pqcPubKeyHash",
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "cid",
-        "type": "string"
-      }
-    ],
+    "inputs": [{ "internalType": "string", "name": "cid", "type": "string" }],
     "name": "setIdentity",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "inputs": [{ "internalType": "bytes32", "name": "newHash", "type": "bytes32" }],
+    "name": "setPqcPublicKeyHash",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "name": "userIdentities",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
+    "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
     "stateMutability": "view",
     "type": "function"
   },

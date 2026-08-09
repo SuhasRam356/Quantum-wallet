@@ -2,18 +2,19 @@
 
 import { useState } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt, useBalance } from 'wagmi';
-import { parseEther, stringToHex, formatEther } from 'viem';
+import { parseEther, formatEther, keccak256 } from 'viem';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/utils/constants';
 
 export default function TransferPage() {
   const [mode, setMode] = useState('send');
   const [amount, setAmount] = useState('');
   const [toAddress, setToAddress] = useState('');
+  const [signingStatus, setSigningStatus] = useState(''); // '', 'signing', 'verifying', 'verified', 'failed'
   
   const { data: hash, error, isPending, writeContract } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
-  // Fetch the Smart Contract's Balance!
+  // Fetch the Smart Contract's Balance
   const { data: contractBalance } = useBalance({ address: CONTRACT_ADDRESS });
   
   const hasInsufficientContractBalance = () => {
@@ -25,25 +26,67 @@ export default function TransferPage() {
     }
   };
 
-  const handleTransfer = () => {
+  const handleTransfer = async () => {
     if (!amount || !toAddress) {
       alert("Please enter a valid amount and recipient address.");
       return;
     }
-    
-    const mockPqcSignature = stringToHex("mock_pqc_signature_" + Date.now());
 
-    writeContract({
-      address: CONTRACT_ADDRESS,
-      abi: CONTRACT_ABI,
-      functionName: 'executeTransaction',
-      args: [
-        toAddress, // target
-        parseEther(amount), // value
-        "0x", // empty data
-        mockPqcSignature // mocked post-quantum signature bytes
-      ],
-    });
+    try {
+      // Step 1: Load the PQC keypair
+      const { getStoredKeypair, signPayload, bytesToHex } = await import('@/utils/pqcKeyManager');
+      const keypair = getStoredKeypair();
+      
+      if (!keypair) {
+        alert("No PQC keypair found! Please generate one on the Keys page first.");
+        return;
+      }
+
+      // Step 2: Sign the transaction payload with real ML-DSA-65
+      setSigningStatus('signing');
+      const payload = `transfer:${toAddress}:${amount}:${Date.now()}`;
+      const payloadHex = bytesToHex(new TextEncoder().encode(payload));
+      const signatureHex = await signPayload(payload);
+
+      // Step 3: Verify the signature server-side (REAL cryptographic verification)
+      setSigningStatus('verifying');
+      const verifyRes = await fetch('/api/verify-pqc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: payloadHex,
+          signature: signatureHex,
+          publicKey: keypair.publicKey,
+        }),
+      });
+      const verifyResult = await verifyRes.json();
+
+      if (!verifyResult.valid) {
+        setSigningStatus('failed');
+        alert("PQC signature verification failed! Transaction aborted.");
+        return;
+      }
+
+      setSigningStatus('verified');
+
+      // Step 4: Submit the transaction to the smart contract
+      // Pass the real public key bytes — the contract will verify keccak256(pubKey) == stored commitment
+      writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'executeTransaction',
+        args: [
+          toAddress,
+          parseEther(amount),
+          "0x",
+          keypair.publicKey, // Real ML-DSA-65 public key for on-chain hash verification
+        ],
+      });
+    } catch (err) {
+      console.error('Transfer failed:', err);
+      setSigningStatus('failed');
+      alert('Transfer failed: ' + err.message);
+    }
   };
 
   return (
@@ -100,19 +143,46 @@ export default function TransferPage() {
               </div>
             )}
 
+            {/* PQC Signing Status */}
+            {signingStatus && (
+              <div style={{ 
+                padding: '12px', 
+                borderRadius: '8px',
+                border: `1px solid ${signingStatus === 'verified' ? '#00ff88' : signingStatus === 'failed' ? '#ff4444' : 'var(--accent-purple)'}`,
+                background: signingStatus === 'verified' ? 'rgba(0, 255, 136, 0.05)' : signingStatus === 'failed' ? 'rgba(255, 68, 68, 0.05)' : 'rgba(112, 0, 255, 0.05)',
+                display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem'
+              }}>
+                {signingStatus === 'signing' && <span>🔐 Signing payload with ML-DSA-65...</span>}
+                {signingStatus === 'verifying' && <span>🔍 Verifying signature server-side (FIPS-204)...</span>}
+                {signingStatus === 'verified' && <span style={{ color: '#00ff88' }}>✓ ML-DSA-65 Signature Verified</span>}
+                {signingStatus === 'failed' && <span style={{ color: '#ff4444' }}>✗ PQC Signature Verification Failed</span>}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="text-muted">Security Level</span>
+                <span style={{ fontWeight: 500, color: '#00ff88' }}>ML-DSA-65 (FIPS-204)</span>
+              </div>
+            </div>
+
             <button 
               className="btn-primary" 
               onClick={handleTransfer} 
-              disabled={isPending || isConfirming || hasInsufficientContractBalance()} 
+              disabled={isPending || isConfirming || hasInsufficientContractBalance() || signingStatus === 'signing' || signingStatus === 'verifying'} 
               style={{ 
                 padding: '16px', 
                 fontSize: '1.1rem', 
-                marginTop: '1rem',
+                marginTop: '0.5rem',
                 background: hasInsufficientContractBalance() ? 'gray' : 'var(--gradient-glow)',
                 cursor: hasInsufficientContractBalance() ? 'not-allowed' : 'pointer'
               }}
             >
-              {isPending ? 'Confirming in Wallet...' : isConfirming ? 'Waiting for block confirmation...' : 'Execute Transaction'}
+              {signingStatus === 'signing' ? '🔐 Signing with ML-DSA-65...' 
+                : signingStatus === 'verifying' ? '🔍 Verifying PQC Signature...'
+                : isPending ? 'Confirming in Wallet...' 
+                : isConfirming ? 'Waiting for block confirmation...' 
+                : 'Sign & Execute Transaction'}
             </button>
 
             {isConfirmed && <div style={{ color: '#00ff88', textAlign: 'center', marginTop: '1rem' }}>Transaction Confirmed! Hash: {hash?.slice(0,10)}...</div>}

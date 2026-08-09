@@ -13,7 +13,9 @@ async function main() {
   const factory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, wallet);
   
   console.log("Deploying QuantumSmartWallet to Sepolia...");
-  const contract = await factory.deploy("mock_dilithium_public_key_sepolia", wallet.address);
+  // Deploy with a placeholder PQC key hash — the owner will register the real one via setPqcPublicKeyHash
+  const placeholderHash = ethers.keccak256(ethers.toUtf8Bytes("placeholder_pqc_key_pending_registration"));
+  const contract = await factory.deploy(placeholderHash, wallet.address);
   await contract.waitForDeployment();
   
   const address = await contract.getAddress();
