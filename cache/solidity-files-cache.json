@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "D:\\Quantum Wallet\\contracts\\QuantumSmartWallet.sol": {
-      "lastModificationDate": 1786274172114,
-      "contentHash": "952d6cc0a51efe33a4067d91d37cb576",
+      "lastModificationDate": 1786278708783,
+      "contentHash": "b384c67bb8a2fd7a97d5daa86b6065af",
       "sourceName": "contracts/QuantumSmartWallet.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -414,6 +414,156 @@
       ],
       "artifacts": [
         "Panic"
+      ]
+    },
+    "D:\\Quantum Wallet\\contracts\\QuantumSmartWalletFactory.sol": {
+      "lastModificationDate": 1786337519117,
+      "contentHash": "dc75e2bc89cc32a01731318162fe0e0f",
+      "sourceName": "contracts/QuantumSmartWalletFactory.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "cancun",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/utils/Create2.sol",
+        "./QuantumSmartWallet.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "QuantumSmartWalletFactory"
+      ]
+    },
+    "D:\\Quantum Wallet\\node_modules\\@openzeppelin\\contracts\\utils\\Create2.sol": {
+      "lastModificationDate": 1786274142024,
+      "contentHash": "d49092ca25de2146da46306d739c8122",
+      "sourceName": "@openzeppelin/contracts/utils/Create2.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "cancun",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Errors.sol",
+        "./LowLevelCall.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Create2"
+      ]
+    },
+    "D:\\Quantum Wallet\\node_modules\\@openzeppelin\\contracts\\utils\\LowLevelCall.sol": {
+      "lastModificationDate": 1786274142331,
+      "contentHash": "0474caccabcd255a35c82fe878701271",
+      "sourceName": "@openzeppelin/contracts/utils/LowLevelCall.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "cancun",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "LowLevelCall"
+      ]
+    },
+    "D:\\Quantum Wallet\\node_modules\\@openzeppelin\\contracts\\utils\\Errors.sol": {
+      "lastModificationDate": 1786274142203,
+      "contentHash": "6b5eac2b85500c3012977849cfd633d8",
+      "sourceName": "@openzeppelin/contracts/utils/Errors.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "cancun",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Errors"
       ]
     }
   }

@@ -19,8 +19,7 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
-    // Dynamic import of @noble/post-quantum
-    const { ml_dsa65 } = await import('@noble/post-quantum/ml-dsa');
+    const { ml_dsa65 } = await import('@noble/post-quantum/ml-dsa.js');
 
     // Convert hex strings to Uint8Arrays
     const hexToBytes = (hex) => {

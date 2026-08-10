@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useBalance, useWriteContract } from 'wagmi';
 import { formatEther } from 'viem';
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/utils/constants';
+import { CONTRACT_ABI } from '@/utils/constants';
+import { useSmartWallet } from '@/hooks/useSmartWallet';
 
 export default function VaultPage() {
   const { address } = useAccount();
-  const { data: balanceData } = useBalance({ address });
+  const { smartWalletAddress } = useSmartWallet();
+  const { data: balanceData } = useBalance({ address: smartWalletAddress });
   const { writeContractAsync } = useWriteContract();
 
   const [assets, setAssets] = useState([]);
@@ -85,7 +87,7 @@ export default function VaultPage() {
     
     try {
         const txHash = await writeContractAsync({
-          address: CONTRACT_ADDRESS,
+          address: smartWalletAddress,
           abi: CONTRACT_ABI,
           functionName: 'addVaultFile',
           args: [mockCid],

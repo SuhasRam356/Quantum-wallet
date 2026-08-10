@@ -8,22 +8,25 @@ import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title QuantumSmartWallet
- * @dev A smart contract wallet secured by a Hybrid Post-Quantum architecture (ERC-4337).
+ * @dev A smart contract wallet secured by a Post-Quantum Oracle architecture (ERC-4337).
  *
  * Architecture:
- *   1. validateUserOp (ECDSA): Secures the gas payment. Uses a standard ECDSA signature 
- *      to pass bundler simulation and prevent gas griefing.
- *   2. execute (ML-DSA Hash Commitment): Secures the assets. The transaction payload must 
- *      include the correct ML-DSA public key bytes that match the on-chain keccak256 commitment.
- *   3. Off-Chain (Server): Full ML-DSA signature verification is performed off-chain before 
- *      the bundler submits the UserOperation.
+ *   1. validateUserOp (Multi-sig): Requires two ECDSA signatures appended together.
+ *      - Sig 1 (0-65 bytes): The user's ECDSA signature (proves ECDSA ownership).
+ *      - Sig 2 (65-130 bytes): The PQC Validator's ECDSA signature.
+ *   2. The PQC Validator (Oracle) only signs the userOpHash if it first successfully 
+ *      verifies the user's ML-DSA (FIPS-204) signature off-chain against the on-chain 
+ *      pqcPubKeyHash commitment.
+ *   3. This binds the post-quantum signature exactly to the executed calldata, nonce, 
+ *      and chain ID, preventing all replay attacks.
  */
 contract QuantumSmartWallet is IAccount {
     using ECDSA for bytes32;
 
     address public immutable entryPoint;
     bytes32 public pqcPubKeyHash;   // keccak256 commitment of the ML-DSA public key
-    address public owner;           // ECDSA owner for validating UserOps (gas protection)
+    address public owner;           // ECDSA owner for standard 2FA
+    address public pqcValidator;    // The ECDSA public key of our Post-Quantum Oracle
 
     // --- IPFS & Access Control ---
     mapping(address => string) public userIdentities;
@@ -44,10 +47,16 @@ contract QuantumSmartWallet is IAccount {
         _;
     }
 
-    constructor(address _entryPoint, bytes32 _pqcPubKeyHash, address _initialOwner) {
+    constructor(
+        address _entryPoint, 
+        bytes32 _pqcPubKeyHash, 
+        address _initialOwner, 
+        address _pqcValidator
+    ) {
         entryPoint = _entryPoint;
         pqcPubKeyHash = _pqcPubKeyHash;
         owner = _initialOwner;
+        pqcValidator = _pqcValidator;
     }
 
     receive() external payable {
@@ -57,21 +66,33 @@ contract QuantumSmartWallet is IAccount {
     // --- ERC-4337 Account Abstraction ---
 
     /**
-     * @dev Validates the user's signature and nonce. 
-     *      Uses standard ECDSA to authorize the gas payment via the EntryPoint.
+     * @dev Validates the dual-signature UserOperation.
+     *      Expects userOp.signature to be 130 bytes: [User ECDSA (65)] + [Validator ECDSA (65)]
      */
     function validateUserOp(
         PackedUserOperation calldata userOp,
         bytes32 userOpHash,
         uint256 missingAccountFunds
     ) external override requireEntryPoint returns (uint256 validationData) {
-        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
-        address signer = hash.recover(userOp.signature);
-        
-        if (signer != owner) {
+        if (userOp.signature.length < 130) {
             return 1; // SIG_VALIDATION_FAILED
         }
 
+        bytes32 hash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
+        
+        // 1. Recover User Signature
+        address userSigner = hash.recover(userOp.signature[0:65]);
+        if (userSigner != owner) {
+            return 1; // SIG_VALIDATION_FAILED
+        }
+
+        // 2. Recover PQC Oracle (Validator) Signature
+        address validatorSigner = hash.recover(userOp.signature[65:130]);
+        if (validatorSigner != pqcValidator) {
+            return 1; // SIG_VALIDATION_FAILED
+        }
+
+        // Both signatures valid, pay entrypoint
         if (missingAccountFunds > 0) {
             (bool success, ) = payable(msg.sender).call{value: missingAccountFunds, gas: type(uint256).max}("");
             (success); // ignore failure, entrypoint will revert if not paid
@@ -82,10 +103,6 @@ contract QuantumSmartWallet is IAccount {
 
     // --- PQC Key Management ---
 
-    /**
-     * @dev Updates the PQC public key hash commitment.
-     *      Can only be called via a valid UserOperation from the EntryPoint.
-     */
     function setPqcPublicKeyHash(bytes32 newHash) external requireEntryPoint {
         pqcPubKeyHash = newHash;
         emit PqcKeyUpdated(newHash);
@@ -110,21 +127,15 @@ contract QuantumSmartWallet is IAccount {
 
     /**
      * @dev Executes a transaction. 
-     *      Must be called via a valid UserOperation from the EntryPoint (ECDSA verified).
-     *      Additionally enforces the PQC public key hash commitment to secure the assets.
+     *      Because the UserOp hash was cryptographically bound to the ML-DSA signature 
+     *      and validated by the PQC Oracle in validateUserOp, we no longer need the 
+     *      pqcPubKey payload injection here.
      */
     function execute(
         address target,
         uint256 value,
-        bytes calldata data,
-        bytes calldata pqcPubKey
+        bytes calldata data
     ) external requireEntryPoint returns (bytes memory) {
-        // Hash commitment verification: caller must know the real PQ public key
-        require(
-            keccak256(pqcPubKey) == pqcPubKeyHash,
-            "Invalid PQC public key"
-        );
-
         (bool success, bytes memory result) = target.call{value: value}(data);
         require(success, "Transaction execution failed");
 
@@ -132,5 +143,6 @@ contract QuantumSmartWallet is IAccount {
         return result;
     }
 }
+
 
 

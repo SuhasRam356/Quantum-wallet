@@ -15,7 +15,7 @@ const STORAGE_KEY = 'quantum_wallet_pqc_keypair';
  * We use dynamic import because this is a client-side ES module.
  */
 async function getMlDsa() {
-  const { ml_dsa65 } = await import('@noble/post-quantum/ml-dsa');
+  const { ml_dsa65 } = await import('@noble/post-quantum/ml-dsa.js');
   return ml_dsa65;
 }
 
@@ -45,8 +45,7 @@ function hexToBytes(hex) {
 export async function generateKeypair() {
   const ml_dsa65 = await getMlDsa();
   
-  const privateKey = ml_dsa65.utils.randomPrivateKey();
-  const publicKey = ml_dsa65.getPublicKey(privateKey);
+  const { secretKey: privateKey, publicKey } = ml_dsa65.keygen();
   
   const keypair = {
     privateKey: bytesToHex(privateKey),

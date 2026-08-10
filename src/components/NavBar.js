@@ -3,13 +3,15 @@
 import Link from 'next/link';
 import { useAccount, useConnect, useDisconnect, useWriteContract } from 'wagmi';
 import { useState, useEffect } from 'react';
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/utils/constants';
+import { CONTRACT_ABI } from '@/utils/constants';
+import { useSmartWallet } from '@/hooks/useSmartWallet';
 
 export default function NavBar() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const { writeContractAsync } = useWriteContract();
+  const { smartWalletAddress } = useSmartWallet();
   
   const [mounted, setMounted] = useState(false);
   const [identity, setIdentity] = useState(null);
@@ -58,7 +60,7 @@ export default function NavBar() {
     setUpdatingIdentity(true);
     try {
       await writeContractAsync({
-        address: CONTRACT_ADDRESS,
+        address: smartWalletAddress,
         abi: CONTRACT_ABI,
         functionName: 'setIdentity',
         args: [newIdentityCid],

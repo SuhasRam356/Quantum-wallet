@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAccount, useConnect, useDisconnect, useWriteContract } from 'wagmi';
 import { keccak256 } from 'viem';
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/utils/constants';
+import { CONTRACT_ABI } from '@/utils/constants';
+import { useSmartWallet } from '@/hooks/useSmartWallet';
 
 export default function KeysPage() {
   const [keypair, setKeypair] = useState(null);
@@ -16,6 +17,7 @@ export default function KeysPage() {
   const { connectors, connect } = useConnect();
   const { disconnect } = useDisconnect();
   const { writeContractAsync } = useWriteContract();
+  const { smartWalletAddress } = useSmartWallet();
 
   useEffect(() => {
     // Load stored keypair on mount
@@ -43,13 +45,17 @@ export default function KeysPage() {
 
   const registerOnChain = async () => {
     if (!keypair || !isConnected) return;
+    if (!smartWalletAddress) {
+       alert("Smart wallet address not computed yet.");
+       return;
+    }
     setRegistering(true);
     try {
       // Compute keccak256 hash of the public key bytes
       const pubKeyHash = keccak256(keypair.publicKey);
       
       await writeContractAsync({
-        address: CONTRACT_ADDRESS,
+        address: smartWalletAddress,
         abi: CONTRACT_ABI,
         functionName: 'setPqcPublicKeyHash',
         args: [pubKeyHash],

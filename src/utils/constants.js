@@ -1,4 +1,4 @@
-export const CONTRACT_ADDRESS = "0x6F0d410f7f0514A65fAB25431F61f4eDdf898c3A";
+export const CONTRACT_ADDRESS = "0xF7512A6f3F8418054152728e5C4b12F1fF611Af6";
 
 export const CONTRACT_ABI = [
   {
@@ -16,6 +16,11 @@ export const CONTRACT_ABI = [
       {
         "internalType": "address",
         "name": "_initialOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_pqcValidator",
         "type": "address"
       }
     ],
@@ -242,11 +247,6 @@ export const CONTRACT_ABI = [
         "internalType": "bytes",
         "name": "data",
         "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "pqcPubKey",
-        "type": "bytes"
       }
     ],
     "name": "execute",
@@ -305,6 +305,19 @@ export const CONTRACT_ABI = [
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pqcValidator",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -434,5 +447,136 @@ export const CONTRACT_ABI = [
   {
     "stateMutability": "payable",
     "type": "receive"
+  }
+];
+
+export const FACTORY_ADDRESS = "0x2F0D1C4E592BBfd7602143806C7f3b80ea209Bab";
+
+export const FACTORY_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_entryPoint",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_pqcValidator",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "Create2EmptyBytecode",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FailedDeployment",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "balance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "needed",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsufficientBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "pqcPubKeyHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "salt",
+        "type": "uint256"
+      }
+    ],
+    "name": "createAccount",
+    "outputs": [
+      {
+        "internalType": "contract QuantumSmartWallet",
+        "name": "ret",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "entryPoint",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "pqcPubKeyHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "salt",
+        "type": "uint256"
+      }
+    ],
+    "name": "getAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pqcValidator",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ];

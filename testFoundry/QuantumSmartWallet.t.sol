@@ -12,6 +12,7 @@ contract QuantumSmartWalletTest is Test {
     QuantumSmartWallet public wallet;
     address public entryPoint;
     address public owner;
+    address public pqcValidator;
     
     // Simulate ML-DSA public key
     bytes public validPqcPubKey;
@@ -20,11 +21,12 @@ contract QuantumSmartWalletTest is Test {
     function setUp() public {
         entryPoint = address(1);
         owner = address(this); // Test contract is the owner
+        pqcValidator = address(0xABC);
         
         validPqcPubKey = bytes("mock_valid_pqc_pub_key");
         validPqcPubKeyHash = keccak256(validPqcPubKey);
         
-        wallet = new QuantumSmartWallet(entryPoint, validPqcPubKeyHash, owner);
+        wallet = new QuantumSmartWallet(entryPoint, validPqcPubKeyHash, owner, pqcValidator);
         vm.deal(address(wallet), 10 ether);
     }
 
@@ -35,25 +37,32 @@ contract QuantumSmartWalletTest is Test {
         uint256 initialBalance = target.balance;
         
         vm.prank(entryPoint);
-        wallet.execute(target, amount, "", validPqcPubKey);
+        wallet.execute(target, amount, "");
         
         assertEq(target.balance, initialBalance + amount);
     }
 
     /**
-     * @dev Fuzz test: Ensure that ANY random bytes provided as the PQC public key 
-     * that are NOT the correct key will revert the transaction. This proves the 
-     * hash commitment access control is robust against arbitrary inputs.
+     * @dev Fuzz test: Ensure that ANY signature less than 130 bytes fails validation.
      */
-    function testFuzz_ExecuteWithInvalidPqcKey(bytes calldata invalidPqcPubKey) public {
-        // Skip if the fuzzer somehow guesses the correct key
-        vm.assume(keccak256(invalidPqcPubKey) != validPqcPubKeyHash);
+    function testFuzz_ValidateUserOpShortSignature(bytes calldata shortSig) public {
+        vm.assume(shortSig.length < 130);
         
-        address target = address(0xDEAD);
-        uint256 amount = 1 ether;
-        
+        PackedUserOperation memory userOp = PackedUserOperation({
+            sender: address(wallet),
+            nonce: 0,
+            initCode: "",
+            callData: "",
+            accountGasLimits: bytes32(0),
+            preVerificationGas: 0,
+            gasFees: bytes32(0),
+            paymasterAndData: "",
+            signature: shortSig
+        });
+
         vm.prank(entryPoint);
-        vm.expectRevert("Invalid PQC public key");
-        wallet.execute(target, amount, "", invalidPqcPubKey);
+        uint256 result = wallet.validateUserOp(userOp, bytes32(0), 0);
+        assertEq(result, 1); // SIG_VALIDATION_FAILED
     }
 }
+

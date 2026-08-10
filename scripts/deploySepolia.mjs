@@ -10,13 +10,24 @@ async function main() {
 
   const artifact = JSON.parse(fs.readFileSync("./artifacts/contracts/QuantumSmartWallet.sol/QuantumSmartWallet.json", "utf8"));
   
+  let validatorPrivKey = process.env.VALIDATOR_PRIVATE_KEY;
+  let validatorWallet;
+  if (!validatorPrivKey) {
+    console.log("VALIDATOR_PRIVATE_KEY not found in .env. Generating a new one...");
+    validatorWallet = ethers.Wallet.createRandom();
+    fs.appendFileSync(".env", `\nVALIDATOR_PRIVATE_KEY="${validatorWallet.privateKey}"\n`);
+    console.log(`Generated and saved new Validator Private Key to .env`);
+  } else {
+    validatorWallet = new ethers.Wallet(validatorPrivKey);
+  }
+
   const factory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, wallet);
   
   console.log("Deploying QuantumSmartWallet to Sepolia...");
   const ENTRY_POINT = "0x0000000071727de22e5e9d8baf0edac6f37da032";
   // Deploy with a placeholder PQC key hash — the owner will register the real one via setPqcPublicKeyHash
   const placeholderHash = ethers.keccak256(ethers.toUtf8Bytes("placeholder_pqc_key_pending_registration"));
-  const contract = await factory.deploy(ENTRY_POINT, placeholderHash, wallet.address);
+  const contract = await factory.deploy(ENTRY_POINT, placeholderHash, wallet.address, validatorWallet.address);
   await contract.waitForDeployment();
   
   const address = await contract.getAddress();

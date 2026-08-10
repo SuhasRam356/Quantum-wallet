@@ -40,6 +40,17 @@ export async function POST(req) {
     // Update the cache
     rateLimitCache.set(address.toLowerCase(), Date.now());
 
+    try {
+      const { addActivity } = await import('@/utils/activityStore');
+      addActivity({
+        sender: 'Auto-Fund Relayer',
+        target: address,
+        amount: '0.005',
+      });
+    } catch (e) {
+      console.error("Error logging fund activity", e);
+    }
+
     return Response.json({ success: true, hash: tx.hash });
   } catch (error) {
     console.error(error);

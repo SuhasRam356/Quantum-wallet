@@ -1,16 +1,14 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { name: 'Mon', balance: 4000, value: 2400 },
-  { name: 'Tue', balance: 3000, value: 1398 },
-  { name: 'Wed', balance: 2000, value: 9800 },
-  { name: 'Thu', balance: 2780, value: 3908 },
-  { name: 'Fri', balance: 1890, value: 4800 },
-  { name: 'Sat', balance: 2390, value: 3800 },
-  { name: 'Sun', balance: 3490, value: 4300 },
-];
+export default function PerformanceChart({ data }) {
+  if (!data || data.length === 0) {
+    return (
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)' }}>
+        Not enough data
+      </div>
+    );
+  }
 
-export default function PerformanceChart() {
   return (
     <div style={{ width: '100%', height: '100%', minHeight: '300px' }}>
       <ResponsiveContainer width="100%" height="100%">
