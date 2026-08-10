@@ -48,7 +48,7 @@ export function useSmartWallet() {
     }
 
     computeAddress();
-  }, [address]);
+  }, [address, publicClient]);
 
   return { smartWalletAddress, isLoading, error };
 }

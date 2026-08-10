@@ -15,20 +15,22 @@ export default function SecurityPage() {
   const [addingGuardian, setAddingGuardian] = useState(false);
   
   // Real settings from localStorage
-  const [settings, setSettings] = useState({
-    biometricEnabled: false,
-    twoFactorEnabled: false,
-    quantumProtectionLevel: 'Maximum (Kyber-1024)'
+  const [settings, setSettings] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedSettings = localStorage.getItem('quantum_security_settings');
+      if (savedSettings) return JSON.parse(savedSettings);
+    }
+    return {
+      biometricEnabled: false,
+      twoFactorEnabled: false,
+      quantumProtectionLevel: 'Maximum (Kyber-1024)'
+    };
   });
   
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
-    // Load settings from localStorage
-    const savedSettings = localStorage.getItem('quantum_security_settings');
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
-    }
+    // Removed setSettings to avoid cascading renders
 
     async function fetchRealLogs() {
       try {
@@ -156,7 +158,7 @@ export default function SecurityPage() {
       
       <div>
         <h1 className="heading-lg">Security & Settings</h1>
-        <p className="text-muted">Manage your wallet's defense mechanisms and security logs.</p>
+        <p className="text-muted">Manage your wallet&apos;s defense mechanisms and security logs.</p>
       </div>
 
       <div className="grid-cols-2">

@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
-export default {
+const config = {
   solidity: {
     version: "0.8.24",
     settings: {
@@ -19,3 +19,5 @@ export default {
     }
   }
 };
+export default config;  
+ 

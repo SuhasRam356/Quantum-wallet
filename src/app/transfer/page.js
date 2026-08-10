@@ -173,7 +173,7 @@ export default function TransferPage() {
 
             {hasInsufficientContractBalance() && (
               <div style={{ padding: '12px', background: 'rgba(255, 68, 68, 0.1)', border: '1px solid #ff4444', borderRadius: '8px', color: '#ff4444', fontSize: '0.9rem' }}>
-                <strong>Insufficient Smart Wallet Balance.</strong> Deposit funds via the 'Receive' tab first!
+                <strong>Insufficient Smart Wallet Balance.</strong> Deposit funds via the &apos;Receive&apos; tab first!
               </div>
             )}
 
