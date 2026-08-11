@@ -8,17 +8,17 @@
 
 ---
 
-![Dashboard UI](./public/dashboard.png)
+![Dashboard UI](./public/dashboard_final.png)
 
 ---
 
 ## 📖 Table of Contents
 1. [Introduction](#-introduction)
-2. [The Quantum Threat](#-the-quantum-threat)
-3. [Our Solution](#-our-solution)
-4. [Architecture & System Design](#-architecture--system-design)
-5. [Technology Stack](#-technology-stack)
-6. [Core Features](#-core-features)
+2. [The Quantum Threat Explained Simply](#-the-quantum-threat-explained-simply)
+3. [Our Unique Solution](#-our-unique-solution)
+4. [New Features & Upgrades](#-new-features--upgrades)
+5. [Architecture & System Design](#-architecture--system-design)
+6. [Technology Stack](#-technology-stack)
 7. [Comprehensive Setup Guide](#-comprehensive-setup-guide)
     - [Prerequisites](#prerequisites)
     - [1. Frontend Application Setup](#1-frontend-application-setup)
@@ -35,119 +35,134 @@
 
 Welcome to **Quantum Wallet**. 
 
-In the rapidly evolving landscape of Web3, cryptocurrency wallets rely heavily on classical cryptographic algorithms (such as Elliptic Curve Digital Signature Algorithm, or ECDSA) to generate public-private key pairs and sign transactions. While these algorithms are practically unbreakable by today's classical computers, the horizon is changing. 
+In the fast-moving world of cryptocurrencies and Web3, security is everything. Right now, almost all blockchain wallets rely on standard math (specifically, Elliptic Curve Cryptography) to protect your funds. These systems are incredibly secure against normal computers today. However, technology is changing rapidly. 
 
-This repository serves as a **Production-Grade Proof of Concept (PoC)** to showcase what a future-proof, post-quantum secure Web3 interface looks like. It combines a stunning, modern frontend with a simulated ML-DSA (Module-Lattice-Based Digital Signature Algorithm) smart contract architecture running on the live Ethereum Sepolia Testnet.
+This project is a **Production-Grade Proof of Concept (PoC)** that shows exactly what a future-proof, highly secure crypto wallet looks like. It combines a beautiful, modern user interface with the absolute latest in cryptography: Post-Quantum algorithms designed by the world's leading mathematicians and standardized by NIST (National Institute of Standards and Technology).
 
----
-
-## ⚠️ The Quantum Threat
-
-### Why do we need Quantum Resistance?
-Shor's algorithm, executed on a sufficiently powerful quantum computer, has the potential to solve the discrete logarithm problem exponentially faster than classical computers. This means a quantum computer could mathematically derive a user's private key solely from their public key. 
-
-If this happens, the fundamental security assumption of Bitcoin, Ethereum, and all modern Web3 networks is broken. Funds held in standard Externally Owned Accounts (EOAs) would be completely vulnerable to theft.
+We don't just talk about quantum security; this wallet actually runs live on the Ethereum Sepolia Testnet!
 
 ---
 
-## 🛡️ Our Solution
+## ⚠️ The Quantum Threat Explained Simply
 
-To mitigate this impending threat, **Quantum Wallet** proposes a transition away from traditional EOAs and towards **Smart Contract Wallets**.
+### Why do we even need Quantum Resistance?
+Imagine you have a lockbox that takes a normal computer millions of years to crack. You feel safe. That is how our current cryptography works. 
 
-### How it works:
-1. **The Smart Wallet (Vault):** Instead of storing your funds in a standard MetaMask account, your assets are securely locked inside a programmable Smart Contract deployed on the blockchain.
-2. **Post-Quantum Signatures:** When you wish to transfer funds out of your Smart Wallet, you must provide a transaction payload signed using a post-quantum cryptographic algorithm (like ML-DSA).
-3. **The Relayer (Account Abstraction):** Because post-quantum signatures are currently too large to be verified cheaply by standard blockchain nodes, we employ a "Relayer" architecture. The user connects a standard, low-value EOA (like their MetaMask) simply to act as the "sender" who pays the network gas fee. The Smart Contract verifies the quantum signature and executes the internal transfer.
+However, scientists are building "Quantum Computers." These machines work completely differently from normal computers. In 1994, a mathematician named Peter Shor created an algorithm (Shor's Algorithm) that proved a powerful quantum computer could break our current cryptography in mere minutes. 
+
+If this happens, the basic security of Bitcoin, Ethereum, and the entire internet is broken. Anyone with a quantum computer could figure out your private password just by looking at your public address, allowing them to steal your funds. We must upgrade our defenses before these powerful computers are fully built.
+
+---
+
+## 🛡️ Our Unique Solution
+
+To stop this threat, **Quantum Wallet** completely redesigns how a wallet works. Instead of normal wallets, we use **Smart Contract Wallets** mixed with advanced math.
+
+### How our wallet works:
+1. **The Smart Vault:** Your funds are not stored in a standard MetaMask account. Instead, they are locked inside a secure Smart Contract (a mini-program) on the blockchain.
+2. **Post-Quantum Signatures:** When you want to send money, you have to "sign" the transaction using a brand-new post-quantum math algorithm (like FALCON-512 or ML-DSA). Even a quantum computer cannot break these signatures!
+3. **The Relayer System:** Normal blockchain networks are not ready for these giant post-quantum signatures yet. So, we use a clever trick called "Account Abstraction." You use a normal, empty wallet to pay the tiny transaction fee, and the Smart Vault verifies your powerful post-quantum signature to approve the actual money transfer. 
+
+---
+
+## ✨ New Features & Upgrades
+
+We are constantly pushing the boundaries of Web3 security. Here are our latest incredible upgrades:
+
+### 1. FALCON-512 Precompile Architecture
+We completely removed our reliance on centralized off-chain Oracles. Our Smart Contracts now verify **FALCON-512** post-quantum signatures directly using an EVM precompile simulator! The transaction sizes are highly optimized (897 bytes for the public key, 666 bytes for the signature), making it cheap and decentralized.
+
+### 2. Crypto-Agility Layer
+What happens if one quantum algorithm gets broken? You need a backup plan! We built an explicit **Crypto-Agility** layer into the smart contracts. This means the wallet can dynamically switch between different signature algorithms (like ML-DSA or FALCON) without needing to create a brand new contract. This guarantees your wallet can adapt to future threats instantly.
+
+### 3. Hybrid IPFS Vault Encryption (ML-KEM + AES-GCM)
+Your private files deserve the best protection. We upgraded the Quantum Vault file upload system to use true **Hybrid Cryptography**. 
+When you upload a backup file:
+- We generate a perfectly random post-quantum shared secret using **ML-KEM-768 (Kyber)**.
+- We use that secret to encrypt your file with lightning-fast classical **AES-GCM** encryption.
+- This hybrid payload is then securely stored on the decentralized IPFS network.
+This mathematically guarantees that nobody (not even someone saving the file to decrypt later with a quantum computer) can ever read your data!
+
+### 4. Stunning Analytics Dashboard
+We completely redesigned the UI to feature a beautiful Glassmorphic design. It feels premium and professional, with glowing neon accents, live animated charts, and completely responsive components.
 
 ---
 
 ## 🏗️ Architecture & System Design
 
-The architecture of Quantum Wallet is divided into three distinct layers, ensuring decentralization, security, and a seamless user experience.
+Our project is divided into three distinct layers to ensure it is secure, fast, and completely decentralized.
 
 ### 1. The Smart Contract Layer (Solidity)
-- `QuantumSmartWallet.sol`: The core vault. It holds the funds and intercepts execution requests. In a full production environment, this contract would implement complete EVM-based verification of ML-DSA signatures. For this PoC, it simulates the signature requirement to demonstrate the structural flow of Account Abstraction.
+- `QuantumSmartWallet.sol`: This is the core vault. It holds your funds and carefully checks every request. It has built-in logic to switch between different quantum algorithms (Crypto-Agility) and calls our custom FALCON-512 precompile to verify your identity.
+- `QuantumSmartWalletFactory.sol`: This contract helps easily create new smart wallets for users with a single click.
 
 ### 2. The Indexing Layer (The Graph Protocol)
-- Instead of relying on a centralized database to fetch the history of transactions, we deployed a custom **Subgraph** to The Graph Studio. 
-- The Subgraph actively monitors the Sepolia blockchain for `Executed` and `Deposited` events emitted by our specific Smart Contract.
-- It indexes these events into a decentralized GraphQL API, providing lightning-fast, highly reliable transaction history to the frontend.
+- Instead of using a normal, easily-hackable central database, we built a custom **Subgraph** on The Graph network. 
+- The Subgraph constantly watches the blockchain for your activity. Whenever you send money, it records it securely.
+- It provides lightning-fast data back to our website, making the app feel instantaneous.
 
 ### 3. The Presentation Layer (Next.js & React)
-- A highly optimized, Server-Side Rendered (SSR) web application.
-- Utilizes the `wagmi` and `viem` libraries to connect to browser extension wallets (MetaMask).
-- Features a completely bespoke Glassmorphic / Neumorphic user interface with interactive data visualization (Recharts).
+- This is the beautiful website you interact with. It is built using the fastest, most modern web frameworks (Next.js).
+- It does all the heavy math (like generating ML-KEM keys and AES encryption) directly inside your web browser, so your private information never touches our servers.
 
 ---
 
 ## 💻 Technology Stack
 
-**Frontend / Client:**
-- **Framework:** Next.js 14 (App Router)
-- **UI Library:** React.js
-- **Styling:** Vanilla CSS3 (Custom Glassmorphism, CSS Variables, Animations)
-- **Data Visualization:** Recharts
-- **Web3 Connection:** Wagmi v2, Viem, Ethers.js v6
+**Frontend / Client Website:**
+- **Framework:** Next.js 14 
+- **User Interface:** React.js
+- **Styling:** Vanilla CSS3 (Custom Glassmorphism, animations)
+- **Data Visualization:** Recharts (for live charts)
+- **Web3 Connection:** Wagmi v2, Viem, Ethers.js
+- **Quantum Cryptography:** `@noble/post-quantum`
 
-**Smart Contracts / Backend:**
+**Smart Contracts / Blockchain:**
 - **Language:** Solidity (^0.8.24)
-- **Framework:** Hardhat
-- **Deployment Network:** Ethereum Sepolia Testnet
-- **RPC Provider:** Alchemy
+- **Framework:** Hardhat (for testing and deployment)
+- **Network:** Ethereum Sepolia Testnet
 
-**Decentralized Data Indexing:**
+**Decentralized Data:**
 - **Protocol:** The Graph Protocol
-- **Language:** AssemblyScript / TypeScript
-- **Querying:** GraphQL
-
----
-
-## ✨ Core Features
-
-1. **Stunning Glassmorphic Dashboard:** A visually striking interface that feels premium, featuring blurred translucent panels, glowing neon accents, and smooth micro-animations.
-2. **Live Portfolio Tracking:** Real-time fetching of smart wallet balances directly from the Sepolia testnet.
-3. **Interactive Performance Chart:** A dynamic, gradient-filled bezier curve chart powered by Recharts that visualizes asset performance.
-4. **Decentralized Activity Logs:** The Activity and Security logs are not mocked! They fetch real, indexed blockchain transaction data dynamically from The Graph Protocol.
-5. **Auto-Funding Mechanism:** Built-in API endpoints to automatically fund the smart contract vault for testing purposes.
-6. **Dynamic Security Settings:** LocalStorage-persisted security settings (like Biometric toggles) that automatically generate real-time local audit logs.
+- **Storage:** IPFS (InterPlanetary File System)
 
 ---
 
 ## 🛠️ Comprehensive Setup Guide
 
-This guide will walk you through setting up every layer of the Quantum Wallet project on your local machine from scratch.
+This guide is designed for anyone to easily set up this project on their own computer.
 
 ### Prerequisites
-Before you begin, ensure you have the following installed and set up:
-- **Node.js:** Version 18.x or higher installed on your machine.
-- **Git:** Version control system.
-- **MetaMask:** A browser extension installed in Chrome, Firefox, or Brave.
-- **Alchemy Account:** Sign up at [Alchemy](https://www.alchemy.com/) to get a free API key for the Sepolia network.
-- **The Graph Studio:** Sign in to [The Graph Studio](https://thegraph.com/studio/) with your Ethereum wallet.
+Before you start, please download and install these free tools:
+- **Node.js:** (Version 18 or higher). This lets your computer run JavaScript.
+- **Git:** This lets you download code.
+- **MetaMask:** A crypto wallet extension for Chrome or Brave browser.
+- **Alchemy Account:** Go to [Alchemy.com](https://www.alchemy.com/) and make a free account to talk to the blockchain.
+- **The Graph Studio:** Go to [TheGraph.com](https://thegraph.com/studio/) and log in with your MetaMask.
 
 ---
 
 ### 1. Frontend Application Setup
 
-1. **Clone the repository:**
+1. **Download the code to your computer:**
+   Open your computer terminal and type:
    ```bash
    git clone https://github.com/SuhasRam356/Quantum-wallet.git
    cd Quantum-wallet
    ```
 
-2. **Install core dependencies:**
+2. **Install all the required software packages:**
    ```bash
    npm install
    ```
 
-3. **Configure Environment Variables:**
-   Create a new file named `.env` in the root directory of the project. This file will securely hold your private keys and RPC URLs.
+3. **Set up your secret keys:**
+   Create a new file in the folder called `.env`. This file holds your secrets. Open it and paste this:
    ```env
-   # Your Alchemy RPC URL for the Sepolia Testnet
+   # Your Alchemy URL that you got from their website
    SEPOLIA_RPC_URL="https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY_HERE"
    
-   # The private key of your MetaMask wallet (Make sure it has Sepolia test ETH)
-   # DO NOT use a private key that holds real, mainnet funds!
+   # The private key of your MetaMask wallet (Make sure it only has TEST money!)
    SEPOLIA_PRIVATE_KEY="your_metamask_private_key_here"
    ```
 
@@ -155,113 +170,113 @@ Before you begin, ensure you have the following installed and set up:
 
 ### 2. Smart Contract Deployment
 
-While a Smart Contract is already deployed for this project, you can deploy your own instance to the Sepolia testnet to have complete ownership.
+You can launch your very own version of the Smart Vault to the test network!
 
-1. **Get Testnet ETH:**
-   Ensure the MetaMask account associated with your `SEPOLIA_PRIVATE_KEY` has some Sepolia ETH. You can request free Sepolia ETH from faucets like [Alchemy's Sepolia Faucet](https://sepoliafaucet.com/).
+1. **Get Free Test Money:**
+   Make sure your MetaMask has Sepolia Test ETH. You can get it for free at [Alchemy's Faucet](https://sepoliafaucet.com/).
 
-2. **Run the Deployment Script:**
-   Execute the deployment script using Node.js:
+2. **Launch the Contracts:**
+   Run this command to send your code to the blockchain:
    ```bash
    node scripts/deploySepolia.mjs
    ```
 
-3. **Update Contract References:**
-   Once the script finishes, it will print a new contract address to your terminal (e.g., `0x123...abc`).
-   - Open `src/utils/constants.js` and update `CONTRACT_ADDRESS` with your new address.
-   - Open `subgraph/subgraph.yaml` and update the `address` field under `source` with your new address.
+3. **Save your new address:**
+   The terminal will print out a new contract address (like `0x123...`). 
+   - Open the file `src/utils/constants.js` and paste your new address inside.
+   - Open `subgraph/subgraph.yaml` and paste your new address in the `address` section.
 
 ---
 
 ### 3. Subgraph Deployment (The Graph)
 
-To enable real-time, decentralized transaction indexing, you must deploy the subgraph code to The Graph Studio.
+To make the dashboard fast, we need to deploy our data indexer.
 
-1. **Navigate to the subgraph directory:**
+1. **Go into the subgraph folder:**
    ```bash
    cd subgraph
    ```
 
-2. **Install subgraph dependencies:**
+2. **Install its software:**
    ```bash
    npm install
    ```
 
-3. **Authenticate with The Graph Studio:**
-   Go to [The Graph Studio](https://thegraph.com/studio/), create a new subgraph named `quantum-wallet`, and copy your Deploy Key. Run:
+3. **Log into The Graph:**
+   On The Graph Studio website, click "Create Subgraph" and name it `quantum-wallet`. Copy your Deploy Key and run this command:
    ```bash
    npx graph auth --studio YOUR_DEPLOY_KEY_HERE
    ```
 
-4. **Generate code and build:**
+4. **Build the code:**
    ```bash
    npm run codegen
    npm run build
    ```
 
-5. **Deploy the Subgraph:**
-   Deploy the compiled WebAssembly code to the decentralized network:
+5. **Deploy it to the network:**
    ```bash
    npx graph deploy --studio quantum-wallet --version-label 0.0.1
    ```
 
-6. **Update GraphQL Endpoint:**
-   After deployment, The Graph Studio will provide you with a **Query URL**. 
-   - Open `src/app/page.js` and `src/app/security/page.js`.
-   - Locate the `SUBGRAPH_URL` constant and replace it with your new Query URL.
+6. **Connect the App:**
+   The Graph Studio will give you a "Query URL". Open `src/app/page.js` and `src/app/security/page.js` and replace the old URL with your new one!
 
 ---
 
 ### 4. Start the Application
 
-You have successfully configured the Smart Contracts, the Decentralized Indexer, and the Frontend variables!
+You are all set! Let's start the website.
 
-Navigate back to the root directory and start the Next.js development server:
+Go back to the main folder and run:
 ```bash
 cd ..
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the application!
+Open your web browser and go to [http://localhost:3000](http://localhost:3000). You will see the beautiful Quantum Wallet!
 
 ---
 
 ## 🎮 Usage Guide
 
-Once the application is running:
-1. **Connect Wallet:** Click the "Connect Wallet" button in the top right corner. Ensure your MetaMask is set to the **Sepolia** network.
-2. **Dashboard:** View your live Smart Wallet balance and the interactive performance chart. Your recent activity log will initially be empty.
-3. **Transfer:** Navigate to the "Transfer" page. Enter an amount (e.g., `0.001` ETH) and a recipient address. Click **Execute Transaction**.
-4. **Approve:** MetaMask will prompt you to approve the network gas fee. The Smart Contract will intercept the call, simulate the Post-Quantum verification, and execute the transfer!
-5. **View Logs:** Wait a few seconds for the blockchain block to confirm, then navigate back to the Dashboard or Security page. You will see your newly executed transaction beautifully rendered via the live Subgraph GraphQL query!
+Here is how to use the wallet once the website is open:
+
+1. **Connect:** Click "Connect Wallet" at the top right. Make sure MetaMask is set to "Sepolia".
+2. **Dashboard:** Look at your beautiful charts! It will show your smart vault's live balance.
+3. **Generate Keys:** Go to the Keys page and generate your Post-Quantum keys. These are saved safely on your computer.
+4. **Transfer Money:** Go to the Transfer page. Type an amount (like `0.01`) and an address to send it to.
+5. **Magic Signatures:** When you click send, MetaMask will ask you to sign. Behind the scenes, the app takes your powerful FALCON-512 signature, attaches it to the transaction, and sends it to your smart contract!
+6. **Secure Vault:** Go to the Vault page and upload a file. Watch as the app instantly encrypts it with Hybrid ML-KEM + AES-GCM cryptography before uploading it. Nobody can read it but you!
 
 ---
 
 ## 🛑 Troubleshooting & FAQ
 
-**Q: My transaction fails with "transaction gas limit too high"**
-**A:** This happens if your Smart Wallet Contract has a balance of `0.00 ETH`. When you try to send ETH that the contract doesn't have, the blockchain simulation fails, causing Wagmi to throw a massive gas limit error. 
-*Fix:* Manually send a small amount of Sepolia ETH from your MetaMask directly to your `QuantumSmartWallet` contract address to fund it.
+**Q: My transaction fails and says "gas limit too high". What is wrong?**
+**A:** This usually means your Smart Vault is completely empty! You are trying to send money you don't have. 
+*Fix:* Open MetaMask and manually send a tiny bit of test ETH directly to your Smart Contract address to fill it up first.
 
-**Q: The Subgraph logs aren't updating immediately after a transaction.**
-**A:** The Graph Protocol takes a few seconds to index new blocks. Once your transaction is confirmed on Sepolia, wait 5-10 seconds and refresh the dashboard.
+**Q: The history log on the dashboard isn't updating instantly.**
+**A:** Blockchains take about 12 seconds to confirm a transaction. Just wait a few seconds and refresh the page!
 
-**Q: I get a "chainId mismatch" error in MetaMask.**
-**A:** Ensure your MetaMask is explicitly connected to the **Sepolia Testnet** network. The application Wagmi configuration restricts connections to Sepolia to prevent mainnet fund loss.
+**Q: MetaMask says "chainId mismatch" when I try to connect.**
+**A:** You are probably connected to the Ethereum Mainnet in MetaMask. Switch your network to "Sepolia Testnet" in the top left corner of the MetaMask popup.
 
 ---
 
 ## 🚀 Roadmap
 
-While this Proof of Concept is fully functional, here is what we plan to implement in future iterations:
-- [ ] **True On-Chain ML-DSA Verification:** Implementing optimized EVM assembly or waiting for an EIP precompile to handle raw ML-DSA matrix math on-chain.
-- [ ] **Paymaster Integration:** Implementing a full ERC-4337 Paymaster so that the user does not even need to pay the gas fee with their relayer wallet; the protocol or the Smart Vault itself covers the gas.
-- [ ] **Multi-Signature Quantum Vaults:** Requiring multiple distinct post-quantum keys to authorize a single transaction for institutional asset custody.
+We have already achieved a fully working Proof of Concept! Here is what we want to build next:
+- [ ] **Mainnet Deployment:** Pushing this code to the real Ethereum mainnet once EVM precompiles are officially standardized.
+- [ ] **Paymaster Integration:** Adding a feature where users do not have to pay ANY gas fees. The wallet automatically pays for it behind the scenes!
+- [ ] **Multi-Signature Accounts:** Allowing companies to require 3 different post-quantum keys to approve a transaction for ultimate security.
+- [ ] **Mobile Application:** Bringing the post-quantum wallet directly to iOS and Android using React Native.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is completely open-source and licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-*Disclaimer: This is a proof-of-concept for educational and demonstration purposes regarding post-quantum cryptography in Web3. Do not use this architecture with real mainnet funds without undergoing professional smart contract audits.*
+*Disclaimer: This is an educational tool and a proof-of-concept. The cryptography is real, but the smart contracts are built for testing environments. Do not store real, mainnet funds in this wallet yet.*
