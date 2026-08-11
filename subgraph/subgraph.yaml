@@ -5,12 +5,33 @@ schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum
+    name: QuantumSmartWalletFactory
+    network: sepolia
+    source:
+      address: "0xA08372471185Fc8C6D701750634d5e2DbaE80144"
+      abi: QuantumSmartWalletFactory
+      startBlock: 11450631
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Account
+      abis:
+        - name: QuantumSmartWalletFactory
+          file: ./abis/QuantumSmartWalletFactory.json
+        - name: QuantumSmartWallet
+          file: ./abis/QuantumSmartWallet.json
+      eventHandlers:
+        - event: AccountCreated(indexed address,indexed address)
+          handler: handleAccountCreated
+      file: ./src/mapping.ts
+templates:
+  - kind: ethereum
     name: QuantumSmartWallet
     network: sepolia
     source:
-      address: "0xF7512A6f3F8418054152728e5C4b12F1fF611Af6"
       abi: QuantumSmartWallet
-      startBlock: 11450631
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

@@ -1,16 +1,15 @@
 "use client";
 
 import Link from 'next/link';
-import { useAccount, useConnect, useDisconnect, useWriteContract } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useSignMessage } from 'wagmi';
 import { useState, useEffect } from 'react';
-import { CONTRACT_ABI } from '@/utils/constants';
 import { useSmartWallet } from '@/hooks/useSmartWallet';
 
 export default function NavBar() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
-  const { writeContractAsync } = useWriteContract();
+  const { signMessageAsync } = useSignMessage();
   const { smartWalletAddress } = useSmartWallet();
   
   const [mounted, setMounted] = useState(false);
@@ -58,21 +57,48 @@ export default function NavBar() {
 
   const handleUpdateIdentity = async () => {
     if (!newIdentityCid) return;
+    if (!smartWalletAddress) { alert("Smart wallet not ready."); return; }
     setUpdatingIdentity(true);
     try {
-      await writeContractAsync({
-        address: smartWalletAddress,
-        abi: CONTRACT_ABI,
-        functionName: 'setIdentity',
-        args: [newIdentityCid],
+      const { Interface } = await import('ethers');
+      const iface = new Interface(["function setIdentity(string cid)"]);
+      const rawCallData = iface.encodeFunctionData("setIdentity", [newIdentityCid]);
+
+      const prepRes = await fetch('/api/bundler/prepare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender: smartWalletAddress, rawCallData, owner: address }),
       });
-      alert("Identity update sent!");
+      const prepResult = await prepRes.json();
+      if (!prepRes.ok) throw new Error(prepResult.error);
+      const { userOp, userOpHash } = prepResult;
+
+      const hashBytes = new Uint8Array(
+        (userOpHash.startsWith('0x') ? userOpHash.slice(2) : userOpHash)
+          .match(/.{1,2}/g).map(b => parseInt(b, 16))
+      );
+      userOp.signature = await signMessageAsync({ message: { raw: hashBytes } });
+
+      const { signPayload, getStoredKeypair } = await import('@/utils/pqcKeyManager');
+      const keypair = getStoredKeypair();
+      if (!keypair) throw new Error("No PQC keypair. Generate one on the Keys page.");
+      const pqcSig = await signPayload(hashBytes);
+
+      const submitRes = await fetch('/api/bundler/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userOp, pqcSignature: pqcSig, pqcPublicKey: keypair.publicKey }),
+      });
+      const submitResult = await submitRes.json();
+      if (!submitRes.ok) throw new Error(submitResult.error);
+
+      alert("Identity updated via EntryPoint!");
       setIdentity(newIdentityCid);
       setShowIdentityModal(false);
       setNewIdentityCid("");
     } catch(e) {
       console.error(e);
-      alert("Failed to update identity");
+      alert("Failed to update identity: " + e.message);
     }
     setUpdatingIdentity(false);
   };

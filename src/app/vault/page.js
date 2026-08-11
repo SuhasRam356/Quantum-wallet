@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAccount, useBalance, useWriteContract } from 'wagmi';
+import { useAccount, useBalance, useSignMessage } from 'wagmi';
 import { formatEther } from 'viem';
-import { CONTRACT_ABI } from '@/utils/constants';
 import { useSmartWallet } from '@/hooks/useSmartWallet';
 
 export default function VaultPage() {
   const { address } = useAccount();
   const { smartWalletAddress } = useSmartWallet();
   const { data: balanceData } = useBalance({ address: smartWalletAddress });
-  const { writeContractAsync } = useWriteContract();
+  const { signMessageAsync } = useSignMessage();
 
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,36 +74,56 @@ export default function VaultPage() {
     setUploading(true);
     setUploadStatus("Encrypting with Kyber-1024...");
     
-    // Simulate encryption and IPFS upload delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     setUploadStatus("Uploading to IPFS...");
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Generate a mock CID (e.g., Qm...) based on timestamp to make it unique
     const mockCid = "Qm" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15) + "xyz";
     
-    setUploadStatus("Please approve transaction in MetaMask to save CID to blockchain...");
+    setUploadStatus("Building UserOp for on-chain commit...");
     
     try {
-        const txHash = await writeContractAsync({
-          address: smartWalletAddress,
-          abi: CONTRACT_ABI,
-          functionName: 'addVaultFile',
-          args: [mockCid],
+        const { Interface } = await import('ethers');
+        const iface = new Interface(["function addVaultFile(string cid)"]);
+        const rawCallData = iface.encodeFunctionData("addVaultFile", [mockCid]);
+
+        const prepRes = await fetch('/api/bundler/prepare', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender: smartWalletAddress, rawCallData, owner: address }),
         });
+        const prepResult = await prepRes.json();
+        if (!prepRes.ok) throw new Error(prepResult.error);
+        const { userOp, userOpHash } = prepResult;
+
+        setUploadStatus("Sign in MetaMask...");
+        const hashBytes = new Uint8Array(
+          (userOpHash.startsWith('0x') ? userOpHash.slice(2) : userOpHash)
+            .match(/.{1,2}/g).map(b => parseInt(b, 16))
+        );
+        userOp.signature = await signMessageAsync({ message: { raw: hashBytes } });
+
+        const { signPayload, getStoredKeypair } = await import('@/utils/pqcKeyManager');
+        const keypair = getStoredKeypair();
+        if (!keypair) throw new Error("No PQC keypair. Generate one on the Keys page.");
+        const pqcSig = await signPayload(hashBytes);
+
+        setUploadStatus("Submitting to EntryPoint...");
+        const submitRes = await fetch('/api/bundler/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userOp, pqcSignature: pqcSig, pqcPublicKey: keypair.publicKey }),
+        });
+        const submitResult = await submitRes.json();
+        if (!submitRes.ok) throw new Error(submitResult.error);
         
-        setUploadStatus("Transaction Sent! Waiting for confirmation...");
-        
-        // Optimistically add to UI
+        setUploadStatus("Transaction confirmed!");
         setVaultFiles([{ ipfsCid: mockCid, addedAt: Math.floor(Date.now() / 1000) }, ...vaultFiles]);
-        setTimeout(() => {
-          setUploadStatus("");
-          setFileToUpload(null);
-        }, 3000);
+        setTimeout(() => { setUploadStatus(""); setFileToUpload(null); }, 3000);
         
     } catch(err) {
         console.error(err);
-        setUploadStatus("Transaction failed or rejected.");
+        setUploadStatus("Failed: " + err.message);
     }
     setUploading(false);
   }

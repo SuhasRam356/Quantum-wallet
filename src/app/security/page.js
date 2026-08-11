@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAccount, useWriteContract } from 'wagmi';
+import { useAccount, useSignMessage } from 'wagmi';
 import { formatEther } from 'ethers';
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/utils/constants';
+import { useSmartWallet } from '@/hooks/useSmartWallet';
 
 export default function SecurityPage() {
   const { address } = useAccount();
-  const { writeContractAsync } = useWriteContract();
+  const { signMessageAsync } = useSignMessage();
+  const { smartWalletAddress } = useSmartWallet();
   
   const [loading, setLoading] = useState(true);
   const [guardians, setGuardians] = useState([]);
@@ -130,21 +131,48 @@ export default function SecurityPage() {
   const handleAddGuardian = async () => {
     if(!newGuardian) return;
     if(!address) { alert("Connect wallet first!"); return; }
+    if(!smartWalletAddress) { alert("Smart wallet not ready."); return; }
     
     setAddingGuardian(true);
     try {
-      await writeContractAsync({
-          address: CONTRACT_ADDRESS,
-          abi: CONTRACT_ABI,
-          functionName: 'addGuardian',
-          args: [newGuardian],
+      const { Interface } = await import('ethers');
+      const iface = new Interface(["function addGuardian(address guardian)"]);
+      const rawCallData = iface.encodeFunctionData("addGuardian", [newGuardian]);
+
+      const prepRes = await fetch('/api/bundler/prepare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender: smartWalletAddress, rawCallData, owner: address }),
       });
-      alert("Guardian transaction sent!");
+      const prepResult = await prepRes.json();
+      if (!prepRes.ok) throw new Error(prepResult.error);
+      const { userOp, userOpHash } = prepResult;
+
+      const hashBytes = new Uint8Array(
+        (userOpHash.startsWith('0x') ? userOpHash.slice(2) : userOpHash)
+          .match(/.{1,2}/g).map(b => parseInt(b, 16))
+      );
+      userOp.signature = await signMessageAsync({ message: { raw: hashBytes } });
+
+      const { signPayload, getStoredKeypair } = await import('@/utils/pqcKeyManager');
+      const keypair = getStoredKeypair();
+      if (!keypair) throw new Error("No PQC keypair. Generate one on the Keys page.");
+      const pqcSig = await signPayload(hashBytes);
+
+      const submitRes = await fetch('/api/bundler/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userOp, pqcSignature: pqcSig, pqcPublicKey: keypair.publicKey }),
+      });
+      const submitResult = await submitRes.json();
+      if (!submitRes.ok) throw new Error(submitResult.error);
+
+      alert("Guardian added via EntryPoint!");
       setGuardians([{ guardianAddress: newGuardian, addedAt: Math.floor(Date.now()/1000) }, ...guardians]);
       setNewGuardian("");
     } catch (err) {
       console.error(err);
-      alert("Failed to add guardian");
+      alert("Failed to add guardian: " + err.message);
     }
     setAddingGuardian(false);
   }

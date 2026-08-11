@@ -4,10 +4,14 @@ import { CONTRACT_ADDRESS } from '@/utils/constants';
 
 export async function POST(req) {
   try {
-    const { sender, target, value, data, owner, pqcPubKeyHash } = await req.json();
+    const { sender, target, value, data, owner, pqcPubKeyHash, rawCallData } = await req.json();
 
-    if (!sender || !target || value === undefined) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!sender) {
+      return NextResponse.json({ error: "Missing sender" }, { status: 400 });
+    }
+    // Either rawCallData (for direct wallet function calls) or target+value (for execute() calls)
+    if (!rawCallData && (!target || value === undefined)) {
+      return NextResponse.json({ error: "Missing target/value or rawCallData" }, { status: 400 });
     }
 
     const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
@@ -40,10 +44,15 @@ export async function POST(req) {
         initCode = ethers.concat([FACTORY_ADDRESS, factoryData]);
     }
 
-    // Encode the call to wallet.execute(target, value, data)
-    const walletAbi = ["function execute(address target, uint256 value, bytes calldata data)"];
-    const walletInterface = new ethers.Interface(walletAbi);
-    const callData = walletInterface.encodeFunctionData("execute", [target, value, data || "0x"]);
+    // Build callData: either use rawCallData directly, or wrap in execute()
+    let callData;
+    if (rawCallData) {
+      callData = rawCallData;
+    } else {
+      const walletAbi = ["function execute(address target, uint256 value, bytes calldata data)"];
+      const walletInterface = new ethers.Interface(walletAbi);
+      callData = walletInterface.encodeFunctionData("execute", [target, value, data || "0x"]);
+    }
 
     // Construct the UserOperation with simple placeholder gas limits (since it's a PoC)
     // A real bundler would do eth_estimateUserOperationGas here.

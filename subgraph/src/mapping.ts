@@ -1,12 +1,27 @@
-import { Executed, Deposited, IdentityUpdated, VaultFileAdded, GuardianAdded } from "../generated/QuantumSmartWallet/QuantumSmartWallet"
-import { Transaction, Identity, VaultFile, Guardian } from "../generated/schema"
+import { Executed, Deposited, IdentityUpdated, VaultFileAdded, GuardianAdded } from "../generated/templates/QuantumSmartWallet/QuantumSmartWallet"
+import { AccountCreated } from "../generated/QuantumSmartWalletFactory/QuantumSmartWalletFactory"
+import { QuantumSmartWallet as QuantumSmartWalletTemplate } from "../generated/templates"
+import { Transaction, Account, Identity, VaultFile, Guardian } from "../generated/schema"
+
+export function handleAccountCreated(event: AccountCreated): void {
+  let account = new Account(event.params.account);
+  account.owner = event.params.owner;
+  account.createdAt = event.block.timestamp;
+  account.save();
+
+  // Create a new data source to index this wallet's events
+  QuantumSmartWalletTemplate.create(event.params.account);
+}
 
 export function handleExecuted(event: Executed): void {
-  // Save the outgoing transaction for the relayer (msg.sender)
+  let walletAddr = event.address;
+
+  // Save the outgoing transaction for the wallet
   let txOutId = event.transaction.hash.toHex() + "-" + event.logIndex.toString() + "-out";
   let txOut = new Transaction(txOutId);
   txOut.type = "Sent ETH";
-  txOut.address = event.transaction.from; // The relayer
+  txOut.address = walletAddr;
+  txOut.wallet = walletAddr;
   txOut.amount = event.params.value;
   txOut.date = event.block.timestamp;
   txOut.status = "completed";
@@ -19,6 +34,7 @@ export function handleExecuted(event: Executed): void {
   let txIn = new Transaction(txInId);
   txIn.type = "Received ETH";
   txIn.address = event.params.target;
+  txIn.wallet = walletAddr;
   txIn.amount = event.params.value;
   txIn.date = event.block.timestamp;
   txIn.status = "completed";
@@ -32,6 +48,7 @@ export function handleDeposited(event: Deposited): void {
   let tx = new Transaction(id);
   tx.type = "Sent ETH (Deposited)";
   tx.address = event.params.sender;
+  tx.wallet = event.address;
   tx.amount = event.params.amount;
   tx.date = event.block.timestamp;
   tx.status = "completed";

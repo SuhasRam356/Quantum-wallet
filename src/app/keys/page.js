@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAccount, useConnect, useDisconnect, useWriteContract } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useSignMessage } from 'wagmi';
 import { keccak256 } from 'viem';
-import { CONTRACT_ABI } from '@/utils/constants';
 import { useSmartWallet } from '@/hooks/useSmartWallet';
 
 export default function KeysPage() {
@@ -16,7 +15,7 @@ export default function KeysPage() {
   const { address, isConnected } = useAccount();
   const { connectors, connect } = useConnect();
   const { disconnect } = useDisconnect();
-  const { writeContractAsync } = useWriteContract();
+  const { signMessageAsync } = useSignMessage();
   const { smartWalletAddress } = useSmartWallet();
 
   useEffect(() => {
@@ -54,13 +53,54 @@ export default function KeysPage() {
       // Compute keccak256 hash of the public key bytes
       const pubKeyHash = keccak256(keypair.publicKey);
       
-      await writeContractAsync({
-        address: smartWalletAddress,
-        abi: CONTRACT_ABI,
-        functionName: 'setPqcPublicKeyHash',
-        args: [pubKeyHash],
+      // ABI-encode the setPqcPublicKeyHash call
+      const iface = new (await import('ethers')).Interface([
+        "function setPqcPublicKeyHash(bytes32 newHash)"
+      ]);
+      const rawCallData = iface.encodeFunctionData("setPqcPublicKeyHash", [pubKeyHash]);
+
+      // Step 1: Prepare UserOp via bundler
+      const prepRes = await fetch('/api/bundler/prepare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender: smartWalletAddress,
+          rawCallData,
+          owner: address,
+        }),
       });
-      alert('PQC public key hash committed on-chain!');
+      const prepResult = await prepRes.json();
+      if (!prepRes.ok) throw new Error(prepResult.error || "Failed to prepare UserOp");
+
+      const { userOp, userOpHash } = prepResult;
+
+      // Step 2: ECDSA sign via MetaMask
+      const { signMessageAsync: signMsg } = await import('wagmi/actions');
+      const userOpHashBytes = new Uint8Array(
+        (userOpHash.startsWith('0x') ? userOpHash.slice(2) : userOpHash)
+          .match(/.{1,2}/g).map(byte => parseInt(byte, 16))
+      );
+      const ecdsaSig = await signMessageAsync({ message: { raw: userOpHashBytes } });
+      userOp.signature = ecdsaSig;
+
+      // Step 3: ML-DSA sign
+      const { signPayload } = await import('@/utils/pqcKeyManager');
+      const pqcSig = await signPayload(userOpHashBytes);
+
+      // Step 4: Submit to bundler
+      const submitRes = await fetch('/api/bundler/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userOp,
+          pqcSignature: pqcSig,
+          pqcPublicKey: keypair.publicKey,
+        }),
+      });
+      const submitResult = await submitRes.json();
+      if (!submitRes.ok) throw new Error(submitResult.error || "Failed to submit UserOp");
+
+      alert('PQC public key hash committed on-chain via EntryPoint!');
     } catch (err) {
       console.error('Registration failed:', err);
       alert('Registration failed: ' + err.message);

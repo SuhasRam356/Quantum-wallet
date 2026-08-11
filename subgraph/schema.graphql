@@ -1,7 +1,14 @@
+type Account @entity {
+  id: Bytes!
+  owner: Bytes!
+  createdAt: BigInt!
+}
+
 type Transaction @entity {
   id: ID!
   type: String!
   address: Bytes!
+  wallet: Bytes!
   amount: BigInt!
   date: BigInt!
   status: String!

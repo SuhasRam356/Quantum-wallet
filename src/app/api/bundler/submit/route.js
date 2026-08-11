@@ -55,6 +55,22 @@ export async function POST(req) {
     if (!isValidPqc) {
       return NextResponse.json({ error: "Invalid ML-DSA Signature" }, { status: 403 });
     }
+
+    // 3. Verify PQC public key matches the on-chain commitment
+    //    Skip if wallet is being deployed for the first time (initCode present)
+    const isFirstDeploy = userOp.initCode && userOp.initCode !== "0x" && userOp.initCode.length > 2;
+    if (!isFirstDeploy) {
+      const walletReadAbi = ["function pqcPubKeyHash() view returns (bytes32)"];
+      const walletContract = new ethers.Contract(userOp.sender, walletReadAbi, provider);
+      const onChainHash = await walletContract.pqcPubKeyHash();
+      const clientHash = ethers.keccak256(pqcPublicKey.startsWith('0x') ? pqcPublicKey : '0x' + pqcPublicKey);
+      
+      if (onChainHash.toLowerCase() !== clientHash.toLowerCase()) {
+        return NextResponse.json({ 
+          error: "PQC public key does not match on-chain commitment. Register your key first on the Keys page." 
+        }, { status: 403 });
+      }
+    }
     
     // 4. PQC Oracle Co-Sign
     const validatorSignature = await validatorWallet.signMessage(ethers.getBytes(userOpHash));
@@ -66,23 +82,6 @@ export async function POST(req) {
     const entryPointWrite = entryPoint.connect(relayerWallet);
     const tx = await entryPointWrite.handleOps([opTuple], relayerWallet.address);
     const receipt = await tx.wait();
-
-    try {
-      const walletAbi = ["function execute(address target, uint256 value, bytes calldata data)"];
-      const walletInterface = new ethers.Interface(walletAbi);
-      const decoded = walletInterface.decodeFunctionData("execute", opTuple.callData);
-      const target = decoded[0];
-      const amount = ethers.formatEther(decoded[1]);
-      
-      const { addActivity } = await import('@/utils/activityStore');
-      addActivity({
-        sender: opTuple.sender,
-        target: target,
-        amount: amount,
-      });
-    } catch (e) {
-      console.error("Error logging activity", e);
-    }
 
     return NextResponse.json({ success: true, txHash: receipt.hash });
   } catch (err) {

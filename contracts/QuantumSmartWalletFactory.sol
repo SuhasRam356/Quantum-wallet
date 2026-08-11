@@ -12,6 +12,8 @@ contract QuantumSmartWalletFactory {
     address public immutable entryPoint;
     address public immutable pqcValidator;
 
+    event AccountCreated(address indexed account, address indexed owner);
+
     constructor(address _entryPoint, address _pqcValidator) {
         entryPoint = _entryPoint;
         pqcValidator = _pqcValidator;
@@ -38,6 +40,8 @@ contract QuantumSmartWalletFactory {
 
         addr = Create2.deploy(0, bytes32(salt), bytecode);
         ret = QuantumSmartWallet(payable(addr));
+        
+        emit AccountCreated(addr, owner);
     }
 
     /**

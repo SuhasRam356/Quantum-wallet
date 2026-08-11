@@ -450,7 +450,7 @@ export const CONTRACT_ABI = [
   }
 ];
 
-export const FACTORY_ADDRESS = "0x2F0D1C4E592BBfd7602143806C7f3b80ea209Bab";
+export const FACTORY_ADDRESS = "0xA08372471185Fc8C6D701750634d5e2DbaE80144";
 
 export const FACTORY_ABI = [
   {
@@ -494,6 +494,25 @@ export const FACTORY_ABI = [
     ],
     "name": "InsufficientBalance",
     "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "AccountCreated",
+    "type": "event"
   },
   {
     "inputs": [
