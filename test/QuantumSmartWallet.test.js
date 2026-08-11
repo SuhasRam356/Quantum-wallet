@@ -145,5 +145,82 @@ describe("QuantumSmartWallet", function () {
     const result = await wallet.connect(entryPoint).validateUserOp.staticCall(userOp, userOpHash, 0);
     expect(result).to.equal(1);
   });
+
+  describe("Social Recovery", function () {
+    let guardian2;
+    let guardian3;
+    let newOwner;
+    const newPqcHash = hre.ethers.keccak256(hre.ethers.randomBytes(32));
+
+    beforeEach(async function () {
+      const signers = await hre.ethers.getSigners();
+      guardian2 = signers[4];
+      guardian3 = signers[5];
+      newOwner = signers[6];
+
+      // Add guardians via EntryPoint (using connect(entryPoint))
+      await wallet.connect(entryPoint).addGuardian(validator.address);
+      await wallet.connect(entryPoint).addGuardian(guardian2.address);
+      await wallet.connect(entryPoint).addGuardian(guardian3.address);
+    });
+
+    it("Should allow a guardian to initiate recovery", async function () {
+      await wallet.connect(validator).initiateRecovery(newOwner.address, 2, newPqcHash);
+      const recovery = await wallet.activeRecovery();
+      expect(recovery.active).to.be.true;
+      expect(recovery.newOwner).to.equal(newOwner.address);
+      expect(recovery.approvalCount).to.equal(1);
+    });
+
+    it("Should not allow non-guardian to initiate recovery", async function () {
+      await expect(
+        wallet.connect(otherAccount).initiateRecovery(newOwner.address, 2, newPqcHash)
+      ).to.be.revertedWith("Only guardian can initiate");
+    });
+
+    it("Should allow other guardians to approve recovery", async function () {
+      await wallet.connect(validator).initiateRecovery(newOwner.address, 2, newPqcHash);
+      await wallet.connect(guardian2).approveRecovery();
+      
+      const recovery = await wallet.activeRecovery();
+      expect(recovery.approvalCount).to.equal(2);
+    });
+
+    it("Should execute recovery after timelock and threshold", async function () {
+      await wallet.connect(validator).initiateRecovery(newOwner.address, 2, newPqcHash);
+      await wallet.connect(guardian2).approveRecovery();
+      
+      // Fast forward time by 1 day + 1 second
+      await hre.network.provider.send("evm_increaseTime", [24 * 60 * 60 + 1]);
+      await hre.network.provider.send("evm_mine");
+
+      await wallet.executeRecovery();
+
+      expect(await wallet.owner()).to.equal(newOwner.address);
+      expect(await wallet.pqcPubKeyHash()).to.equal(newPqcHash);
+      expect(await wallet.pqcAlgorithmId()).to.equal(2);
+
+      const recovery = await wallet.activeRecovery();
+      expect(recovery.active).to.be.false;
+    });
+
+    it("Should fail to execute recovery if timelock hasn't passed", async function () {
+      await wallet.connect(validator).initiateRecovery(newOwner.address, 2, newPqcHash);
+      await wallet.connect(guardian2).approveRecovery();
+      
+      await expect(wallet.executeRecovery()).to.be.revertedWith("Timelock active");
+    });
+
+    it("Should fail to execute recovery if threshold not met", async function () {
+      await wallet.connect(validator).initiateRecovery(newOwner.address, 2, newPqcHash);
+      
+      // Fast forward time
+      await hre.network.provider.send("evm_increaseTime", [24 * 60 * 60 + 1]);
+      await hre.network.provider.send("evm_mine");
+
+      // Threshold is (3 / 2) + 1 = 2. We only have 1 approval.
+      await expect(wallet.executeRecovery()).to.be.revertedWith("Not enough approvals");
+    });
+  });
 });
 

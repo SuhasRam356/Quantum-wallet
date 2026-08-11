@@ -265,13 +265,20 @@ Here is how to use the wallet once the website is open:
 
 ---
 
-## 🚀 Roadmap
+## 🚀 Roadmap & Alternatives Considered
 
 We have already achieved a fully working Proof of Concept! Here is what we want to build next:
 - [ ] **Mainnet Deployment:** Pushing this code to the real Ethereum mainnet once EVM precompiles are officially standardized.
 - [ ] **Paymaster Integration:** Adding a feature where users do not have to pay ANY gas fees. The wallet automatically pays for it behind the scenes!
 - [ ] **Multi-Signature Accounts:** Allowing companies to require 3 different post-quantum keys to approve a transaction for ultimate security.
 - [ ] **Mobile Application:** Bringing the post-quantum wallet directly to iOS and Android using React Native.
+
+### Alternatives Considered: Code-Based vs Lattice-Based Cryptography
+While this wallet currently utilizes **Lattice-based cryptography** (ML-DSA / FALCON) because it offers an excellent balance of relatively small public keys and fast verification, it is not the only option. We explicitly built the **Crypto-Agility Layer** so that alternative schemes can be supported in the future.
+
+One major alternative we considered is **Code-Based Cryptography** (e.g., protocols often recommended for IoT devices). 
+- **The Tradeoff**: Code-based schemes often feature incredibly fast, lightweight signature generation and verification, making them ideal for low-power devices. However, they traditionally suffer from massive public key sizes (sometimes megabytes large), which makes them prohibitively expensive to store on-chain.
+- **Future Integration**: If specific lightweight code-based schemes (or stateful hash-based schemes like XMSS/SPHINCS+) become standardized with heavily optimized on-chain verification, our wallet can seamlessly integrate them by simply adding a new `pqcAlgorithmId`!
 
 ---
 

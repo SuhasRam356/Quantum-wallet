@@ -24,24 +24,111 @@ function hexToBytes(hex) {
   return bytes;
 }
 
-export async function generateKeypair() {
+// --- Encrypted Storage Helpers ---
+async function getDerivedKey(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function encryptPrivateKeys(privateKeysObj, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await getDerivedKey(password, salt);
+  const enc = new TextEncoder();
+  const encoded = enc.encode(JSON.stringify(privateKeysObj));
+
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: iv },
+    key,
+    encoded
+  );
+
+  return {
+    ciphertext: bytesToHex(new Uint8Array(ciphertext)),
+    salt: bytesToHex(salt),
+    iv: bytesToHex(iv)
+  };
+}
+
+async function decryptPrivateKeys(encryptedData, password) {
+  const { ciphertext, salt, iv } = encryptedData;
+  const key = await getDerivedKey(password, hexToBytes(salt));
+  try {
+    const decrypted = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: hexToBytes(iv) },
+      key,
+      hexToBytes(ciphertext)
+    );
+    const dec = new TextDecoder();
+    return JSON.parse(dec.decode(decrypted));
+  } catch (e) {
+    throw new Error("Invalid password or corrupted keystore.");
+  }
+}
+
+
+export async function generateKeypair(password = "quantum_secure") {
   // Mock FALCON-512 sizes
   const privateKey = new Uint8Array(1281); // standard Falcon-512 sk size
   const publicKey = new Uint8Array(897);   // standard Falcon-512 pk size
   
-  // Fill with random bytes to simulate real keys
+  // 1. Fetch QRNG Entropy (Simulated for PoC via ANU QRNG or fallback)
+  let qrngEntropy = new Uint8Array(32);
+  try {
+    const res = await fetch('https://qrng.anu.edu.au/API/jsonI.php?length=32&type=uint8');
+    const data = await res.json();
+    if (data && data.data) {
+      qrngEntropy = new Uint8Array(data.data);
+    } else {
+      crypto.getRandomValues(qrngEntropy);
+    }
+  } catch (e) {
+    console.warn("QRNG fetch failed, falling back to local CSPRNG");
+    crypto.getRandomValues(qrngEntropy);
+  }
+
+  // 2. Mix QRNG with local entropy to seed key generation
   crypto.getRandomValues(privateKey);
   crypto.getRandomValues(publicKey);
+  for(let i=0; i<32; i++) {
+    privateKey[i] ^= qrngEntropy[i];
+    publicKey[i] ^= qrngEntropy[i];
+  }
 
   // Real ML-KEM-768 Keys for Hybrid Encryption
   const { ml_kem768 } = await import('@noble/post-quantum/ml-kem.js');
   const kemKeys = ml_kem768.keygen();
   
-  const keypair = {
+  const privateKeysObj = {
     privateKey: bytesToHex(privateKey),
-    publicKey: bytesToHex(publicKey),
     mlKemPrivateKey: bytesToHex(kemKeys.secretKey),
+  };
+
+  // Encrypt private keys with PBKDF2 + AES-GCM
+  const encryptedPayload = await encryptPrivateKeys(privateKeysObj, password);
+
+  const keypair = {
+    publicKey: bytesToHex(publicKey),
     mlKemPublicKey: bytesToHex(kemKeys.publicKey),
+    encryptedData: encryptedPayload,
     algorithm: 'FALCON-512',
     standard: 'NIST',
     createdAt: new Date().toISOString(),
@@ -72,6 +159,17 @@ export async function signPayload(message) {
   const keypair = getStoredKeypair();
   if (!keypair) {
     throw new Error('No PQC keypair found. Please generate one first on the Keys page.');
+  }
+
+  // Request password to decrypt the keystore
+  const pwd = window.prompt("Enter your Keystore Password to sign transaction:");
+  if (!pwd) throw new Error("Transaction cancelled by user.");
+
+  let decryptedKeys;
+  try {
+    decryptedKeys = await decryptPrivateKeys(keypair.encryptedData, pwd);
+  } catch (e) {
+    throw new Error("Failed to decrypt keys. " + e.message);
   }
   
   // Falcon-512 signature is ~666 bytes
