@@ -24,9 +24,10 @@ contract QuantumSmartWallet is IAccount {
     using ECDSA for bytes32;
 
     address public immutable entryPoint;
-    bytes32 public pqcPubKeyHash;   // keccak256 commitment of the ML-DSA public key
+    uint8 public pqcAlgorithmId;    // The cryptographic algorithm ID (e.g. 1=ML-DSA, 2=FALCON-512)
+    bytes32 public pqcPubKeyHash;   // keccak256 commitment of the PQC public key
     address public owner;           // ECDSA owner for standard 2FA
-    address public pqcValidator;    // The ECDSA public key of our Post-Quantum Oracle
+    address public pqcPrecompile;   // The FALCON-512 precompile address
 
     // --- IPFS & Access Control ---
     mapping(address => string) public userIdentities;
@@ -35,7 +36,7 @@ contract QuantumSmartWallet is IAccount {
 
     event Executed(address indexed target, uint256 value, bytes data);
     event Deposited(address indexed sender, uint256 amount);
-    event PqcKeyUpdated(bytes32 indexed newHash);
+    event PqcKeyUpdated(uint8 indexed algorithmId, bytes32 indexed newHash);
 
     // IPFS & Social Recovery Events
     event IdentityUpdated(address indexed user, string ipfsCid);
@@ -49,14 +50,16 @@ contract QuantumSmartWallet is IAccount {
 
     constructor(
         address _entryPoint, 
+        uint8 _pqcAlgorithmId,
         bytes32 _pqcPubKeyHash, 
         address _initialOwner, 
-        address _pqcValidator
+        address _pqcPrecompile
     ) {
         entryPoint = _entryPoint;
+        pqcAlgorithmId = _pqcAlgorithmId;
         pqcPubKeyHash = _pqcPubKeyHash;
         owner = _initialOwner;
-        pqcValidator = _pqcValidator;
+        pqcPrecompile = _pqcPrecompile;
     }
 
     receive() external payable {
@@ -67,35 +70,56 @@ contract QuantumSmartWallet is IAccount {
 
     /**
      * @dev Validates the dual-signature UserOperation.
-     *      Expects userOp.signature to be 130 bytes: [User ECDSA (65)] + [Validator ECDSA (65)]
+     *      Expects userOp.signature to be 1628 bytes: 
+     *      [User ECDSA (65)] + [FALCON PubKey (897)] + [FALCON Sig (666)]
      */
     function validateUserOp(
         PackedUserOperation calldata userOp,
         bytes32 userOpHash,
         uint256 missingAccountFunds
     ) external override requireEntryPoint returns (uint256 validationData) {
-        if (userOp.signature.length < 130) {
-            return 1; // SIG_VALIDATION_FAILED
+        if (userOp.signature.length < 1628) {
+            return 1; // SIG_VALIDATION_FAILED length
         }
 
         bytes32 hash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
         
-        // 1. Recover User Signature
+        // 1. Recover User ECDSA Signature
         address userSigner = hash.recover(userOp.signature[0:65]);
         if (userSigner != owner) {
-            return 1; // SIG_VALIDATION_FAILED
+            return 1; // SIG_VALIDATION_FAILED ECDSA
         }
 
-        // 2. Recover PQC Oracle (Validator) Signature
-        address validatorSigner = hash.recover(userOp.signature[65:130]);
-        if (validatorSigner != pqcValidator) {
-            return 1; // SIG_VALIDATION_FAILED
+        // 2. Verify PQC Signature based on Algorithm Agility Layer
+        if (pqcAlgorithmId == 2) {
+            // --- FALCON-512 ---
+            if (userOp.signature.length < 1628) return 1;
+            
+            bytes calldata falconPubKey = userOp.signature[65:962]; // 897 bytes
+            bytes calldata falconSig = userOp.signature[962:1628];  // 666 bytes
+
+            // Check if the provided public key matches our on-chain commitment
+            if (keccak256(falconPubKey) != pqcPubKeyHash) return 1;
+
+            bytes memory payload = abi.encodePacked(hash, falconPubKey, falconSig);
+            (bool success, bytes memory returnData) = pqcPrecompile.staticcall(payload);
+            
+            if (!success || returnData.length == 0 || abi.decode(returnData, (bool)) != true) {
+                return 1;
+            }
+        } else if (pqcAlgorithmId == 1) {
+            // --- ML-DSA-65 ---
+            // If algorithm is 1, the EVM expects the ML-DSA precompile to be available (e.g. at 0x101)
+            // or routes to the centralized Oracle signature pattern.
+            revert("ML-DSA precompile not yet available on this network");
+        } else {
+            return 1; // Unsupported Algorithm
         }
 
         // Both signatures valid, pay entrypoint
         if (missingAccountFunds > 0) {
-            (bool success, ) = payable(msg.sender).call{value: missingAccountFunds, gas: type(uint256).max}("");
-            (success); // ignore failure, entrypoint will revert if not paid
+            (bool paid, ) = payable(msg.sender).call{value: missingAccountFunds, gas: type(uint256).max}("");
+            (paid);
         }
 
         return 0; // SIG_VALIDATION_SUCCESS
@@ -103,9 +127,10 @@ contract QuantumSmartWallet is IAccount {
 
     // --- PQC Key Management ---
 
-    function setPqcPublicKeyHash(bytes32 newHash) external requireEntryPoint {
+    function setPqcPublicKey(uint8 newAlgorithmId, bytes32 newHash) external requireEntryPoint {
+        pqcAlgorithmId = newAlgorithmId;
         pqcPubKeyHash = newHash;
-        emit PqcKeyUpdated(newHash);
+        emit PqcKeyUpdated(newAlgorithmId, newHash);
     }
 
     // --- IPFS & Social Recovery Functions ---

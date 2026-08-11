@@ -72,12 +72,46 @@ export default function VaultPage() {
     if (!address) { alert("Please connect wallet!"); return; }
     
     setUploading(true);
-    setUploadStatus("Encrypting with Kyber-1024...");
+    setUploadStatus("Reading file...");
     
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setUploadStatus("Uploading to IPFS...");
+    const fileBuffer = await fileToUpload.arrayBuffer();
+    
+    setUploadStatus("Encapsulating shared secret with ML-KEM...");
+    const { getStoredKeypair, hexToBytes, bytesToHex } = await import('@/utils/pqcKeyManager');
+    const { ml_kem768 } = await import('@noble/post-quantum/ml-kem.js');
+    
+    const keypair = getStoredKeypair();
+    if (!keypair || !keypair.mlKemPublicKey) {
+      throw new Error("No ML-KEM keypair found. Please regenerate keys on the Keys page.");
+    }
+    
+    const pubKeyBytes = hexToBytes(keypair.mlKemPublicKey);
+    
+    // Encapsulate: generates a shared secret and a ciphertext that can be decrypted by the private key
+    const [sharedSecret, mlKemCiphertext] = ml_kem768.encapsulate(pubKeyBytes);
+    
+    setUploadStatus("Encrypting file with AES-GCM...");
+    // Use the 32-byte shared secret as an AES-GCM key
+    const cryptoKey = await window.crypto.subtle.importKey(
+      "raw",
+      sharedSecret,
+      "AES-GCM",
+      true,
+      ["encrypt", "decrypt"]
+    );
+    
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const encryptedContent = await window.crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: iv },
+      cryptoKey,
+      fileBuffer
+    );
+    
+    // We would upload this hybrid payload to IPFS:
+    // const payload = { iv: bytesToHex(iv), kemCiphertext: bytesToHex(mlKemCiphertext), data: bytesToHex(new Uint8Array(encryptedContent)) };
+    
+    setUploadStatus("Uploading Hybrid Payload to IPFS...");
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
     const mockCid = "Qm" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15) + "xyz";
     
     setUploadStatus("Building UserOp for on-chain commit...");

@@ -10,13 +10,13 @@ import "./QuantumSmartWallet.sol";
  */
 contract QuantumSmartWalletFactory {
     address public immutable entryPoint;
-    address public immutable pqcValidator;
+    address public immutable pqcPrecompile;
 
     event AccountCreated(address indexed account, address indexed owner);
 
-    constructor(address _entryPoint, address _pqcValidator) {
+    constructor(address _entryPoint, address _pqcPrecompile) {
         entryPoint = _entryPoint;
-        pqcValidator = _pqcValidator;
+        pqcPrecompile = _pqcPrecompile;
     }
 
     /**
@@ -25,8 +25,8 @@ contract QuantumSmartWalletFactory {
      * Note: during UserOperation execution, this method is called. 
      * If the account already exists, it simply returns its address.
      */
-    function createAccount(address owner, bytes32 pqcPubKeyHash, uint256 salt) public returns (QuantumSmartWallet ret) {
-        address addr = getAddress(owner, pqcPubKeyHash, salt);
+    function createAccount(address owner, uint8 pqcAlgorithmId, bytes32 pqcPubKeyHash, uint256 salt) public returns (QuantumSmartWallet ret) {
+        address addr = getAddress(owner, pqcAlgorithmId, pqcPubKeyHash, salt);
         uint codeSize = addr.code.length;
         if (codeSize > 0) {
             return QuantumSmartWallet(payable(addr));
@@ -35,7 +35,7 @@ contract QuantumSmartWalletFactory {
         bytes memory creationCode = type(QuantumSmartWallet).creationCode;
         bytes memory bytecode = abi.encodePacked(
             creationCode, 
-            abi.encode(entryPoint, pqcPubKeyHash, owner, pqcValidator)
+            abi.encode(entryPoint, pqcAlgorithmId, pqcPubKeyHash, owner, pqcPrecompile)
         );
 
         addr = Create2.deploy(0, bytes32(salt), bytecode);
@@ -47,11 +47,11 @@ contract QuantumSmartWalletFactory {
     /**
      * @dev Calculates the counterfactual address of this account as it would be returned by createAccount()
      */
-    function getAddress(address owner, bytes32 pqcPubKeyHash, uint256 salt) public view returns (address) {
+    function getAddress(address owner, uint8 pqcAlgorithmId, bytes32 pqcPubKeyHash, uint256 salt) public view returns (address) {
         bytes memory creationCode = type(QuantumSmartWallet).creationCode;
         bytes memory bytecode = abi.encodePacked(
             creationCode, 
-            abi.encode(entryPoint, pqcPubKeyHash, owner, pqcValidator)
+            abi.encode(entryPoint, pqcAlgorithmId, pqcPubKeyHash, owner, pqcPrecompile)
         );
         bytes32 hash = keccak256(
             abi.encodePacked(

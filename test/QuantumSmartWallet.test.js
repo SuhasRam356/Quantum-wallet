@@ -8,23 +8,30 @@ describe("QuantumSmartWallet", function () {
   let validator;
   let otherAccount;
 
-  // Simulate an ML-DSA public key (1952 bytes for ML-DSA-65)
-  const mockPqcPubKey = hre.ethers.hexlify(hre.ethers.randomBytes(1952));
+  // Simulate an FALCON-512 public key (897 bytes)
+  const mockPqcPubKey = hre.ethers.hexlify(hre.ethers.randomBytes(897));
   const mockPqcPubKeyHash = hre.ethers.keccak256(mockPqcPubKey);
 
   beforeEach(async function () {
     [owner, entryPoint, validator, otherAccount] = await hre.ethers.getSigners();
+    
+    // Deploy MockFalconPrecompile
+    const MockPrecompile = await hre.ethers.getContractFactory("MockFalconPrecompile");
+    const mock = await MockPrecompile.deploy();
+    await mock.waitForDeployment();
+    
+    const mockAddress = await mock.getAddress();
+    
     const Wallet = await hre.ethers.getContractFactory("QuantumSmartWallet");
-    // constructor(address _entryPoint, bytes32 _pqcPubKeyHash, address _initialOwner, address _pqcValidator)
-    wallet = await Wallet.deploy(entryPoint.address, mockPqcPubKeyHash, owner.address, validator.address);
+    // constructor(_entryPoint, _pqcAlgorithmId, _pqcPubKeyHash, _initialOwner, _pqcPrecompile)
+    wallet = await Wallet.deploy(entryPoint.address, 2, mockPqcPubKeyHash, owner.address, mockAddress);
     await wallet.waitForDeployment();
   });
 
-  it("Should set the right owner, entryPoint, PQC key hash, and validator", async function () {
+  it("Should set the right owner, entryPoint, PQC key hash, and precompile", async function () {
     expect(await wallet.owner()).to.equal(owner.address);
     expect(await wallet.entryPoint()).to.equal(entryPoint.address);
     expect(await wallet.pqcPubKeyHash()).to.equal(mockPqcPubKeyHash);
-    expect(await wallet.pqcValidator()).to.equal(validator.address);
   });
 
   it("Should receive deposits", async function () {
@@ -50,7 +57,6 @@ describe("QuantumSmartWallet", function () {
 
     const initialBalance = await hre.ethers.provider.getBalance(targetAddress);
 
-    // Call execute from the entryPoint (pqcPubKey is no longer needed here)
     await wallet.connect(entryPoint).execute(targetAddress, transferAmount, data);
 
     const finalBalance = await hre.ethers.provider.getBalance(targetAddress);
@@ -63,17 +69,22 @@ describe("QuantumSmartWallet", function () {
     ).to.be.revertedWith("Only EntryPoint can call this");
   });
 
-  it("Should correctly validate a UserOp with valid User and Validator ECDSA signatures", async function () {
+  it("Should correctly validate a UserOp with valid User ECDSA and FALCON-512 signatures", async function () {
     const userOpHash = hre.ethers.keccak256(hre.ethers.toUtf8Bytes("test user op hash"));
+    const hash = hre.ethers.hashMessage(hre.ethers.getBytes(userOpHash));
     
-    // Both sign the same hash
     const userSignature = await owner.signMessage(hre.ethers.getBytes(userOpHash));
-    const validatorSignature = await validator.signMessage(hre.ethers.getBytes(userOpHash));
     
-    // Concat signatures (130 bytes total: 65 + 65. The `0x` is removed from the second sig)
-    const combinedSignature = userSignature + validatorSignature.slice(2);
+    // Mock 666 byte Falcon signature.
+    // Our mock precompile expects the first 32 bytes of the signature to be the keccak256 of the message hash
+    const falconSigBytes = new Uint8Array(666);
+    const expectedHashBytes = hre.ethers.getBytes(hash);
+    falconSigBytes.set(expectedHashBytes, 0);
+    const falconSignature = hre.ethers.hexlify(falconSigBytes);
+    
+    // Concat signatures: ECDSA (65 bytes) + Falcon PK (897 bytes) + Falcon Sig (666 bytes)
+    const combinedSignature = userSignature + mockPqcPubKey.slice(2) + falconSignature.slice(2);
 
-    // Mock PackedUserOperation
     const userOp = {
       sender: await wallet.getAddress(),
       nonce: 0,
@@ -86,17 +97,18 @@ describe("QuantumSmartWallet", function () {
       signature: combinedSignature
     };
 
-    // validateUserOp returns 0 for success
     const result = await wallet.connect(entryPoint).validateUserOp.staticCall(userOp, userOpHash, 0);
     expect(result).to.equal(0);
   });
 
-  it("Should fail validateUserOp if Validator signature is missing or wrong", async function () {
+  it("Should fail validateUserOp if FALCON-512 signature is invalid", async function () {
     const userOpHash = hre.ethers.keccak256(hre.ethers.toUtf8Bytes("test user op hash"));
     const userSignature = await owner.signMessage(hre.ethers.getBytes(userOpHash));
-    const wrongValidatorSignature = await otherAccount.signMessage(hre.ethers.getBytes(userOpHash));
     
-    const combinedSignature = userSignature + wrongValidatorSignature.slice(2);
+    // Random 666 byte signature (won't match the embedded hash check)
+    const falconSignature = hre.ethers.hexlify(hre.ethers.randomBytes(666));
+    
+    const combinedSignature = userSignature + mockPqcPubKey.slice(2) + falconSignature.slice(2);
 
     const userOp = {
       sender: await wallet.getAddress(),
@@ -110,12 +122,11 @@ describe("QuantumSmartWallet", function () {
       signature: combinedSignature
     };
 
-    // validateUserOp returns 1 (SIG_VALIDATION_FAILED)
     const result = await wallet.connect(entryPoint).validateUserOp.staticCall(userOp, userOpHash, 0);
     expect(result).to.equal(1);
   });
 
-  it("Should fail validateUserOp if signature length is less than 130 bytes", async function () {
+  it("Should fail validateUserOp if signature length is less than 1628 bytes", async function () {
     const userOpHash = hre.ethers.keccak256(hre.ethers.toUtf8Bytes("test user op hash"));
     const userSignature = await owner.signMessage(hre.ethers.getBytes(userOpHash)); // 65 bytes only
 

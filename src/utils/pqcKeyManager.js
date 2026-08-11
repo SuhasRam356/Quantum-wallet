@@ -1,34 +1,20 @@
 /**
- * PQC Key Manager — Real ML-DSA-65 (FIPS-204) Post-Quantum Cryptography
+ * PQC Key Manager — Mock FALCON-512
  * 
- * Uses @noble/post-quantum to generate real lattice-based keypairs,
- * sign transaction payloads, and export keys for on-chain commitment.
+ * Since true FALCON-512 WASM bindings are heavy and currently unsupported natively 
+ * by standard wallet libraries, this mock simulates the exact byte sizes and 
+ * interface of FALCON-512 for local EVM precompile testing.
  * 
- * The private key is stored in browser localStorage. In a production
- * wallet this would use a hardware security module or encrypted storage.
+ * - Public Key: 897 bytes
+ * - Signature: 666 bytes
  */
 
-const STORAGE_KEY = 'quantum_wallet_pqc_keypair';
+const STORAGE_KEY = 'quantum_wallet_falcon_keypair';
 
-/**
- * Dynamically imports the ML-DSA-65 module from @noble/post-quantum.
- * We use dynamic import because this is a client-side ES module.
- */
-async function getMlDsa() {
-  const { ml_dsa65 } = await import('@noble/post-quantum/ml-dsa.js');
-  return ml_dsa65;
-}
-
-/**
- * Converts a Uint8Array to a hex string (with 0x prefix).
- */
 function bytesToHex(bytes) {
   return '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/**
- * Converts a hex string (with or without 0x prefix) to a Uint8Array.
- */
 function hexToBytes(hex) {
   const clean = hex.startsWith('0x') ? hex.slice(2) : hex;
   const bytes = new Uint8Array(clean.length / 2);
@@ -38,32 +24,33 @@ function hexToBytes(hex) {
   return bytes;
 }
 
-/**
- * Generates a new ML-DSA-65 keypair and stores it in localStorage.
- * Returns the public key as a hex string.
- */
 export async function generateKeypair() {
-  const ml_dsa65 = await getMlDsa();
+  // Mock FALCON-512 sizes
+  const privateKey = new Uint8Array(1281); // standard Falcon-512 sk size
+  const publicKey = new Uint8Array(897);   // standard Falcon-512 pk size
   
-  const { secretKey: privateKey, publicKey } = ml_dsa65.keygen();
+  // Fill with random bytes to simulate real keys
+  crypto.getRandomValues(privateKey);
+  crypto.getRandomValues(publicKey);
+
+  // Real ML-KEM-768 Keys for Hybrid Encryption
+  const { ml_kem768 } = await import('@noble/post-quantum/ml-kem.js');
+  const kemKeys = ml_kem768.keygen();
   
   const keypair = {
     privateKey: bytesToHex(privateKey),
     publicKey: bytesToHex(publicKey),
-    algorithm: 'ML-DSA-65',
-    standard: 'FIPS-204',
+    mlKemPrivateKey: bytesToHex(kemKeys.secretKey),
+    mlKemPublicKey: bytesToHex(kemKeys.publicKey),
+    algorithm: 'FALCON-512',
+    standard: 'NIST',
     createdAt: new Date().toISOString(),
   };
   
   localStorage.setItem(STORAGE_KEY, JSON.stringify(keypair));
-  
   return keypair;
 }
 
-/**
- * Retrieves the stored keypair from localStorage.
- * Returns null if no keypair exists.
- */
 export function getStoredKeypair() {
   if (typeof window === 'undefined') return null;
   const stored = localStorage.getItem(STORAGE_KEY);
@@ -71,68 +58,46 @@ export function getStoredKeypair() {
   return JSON.parse(stored);
 }
 
-/**
- * Returns the public key as a hex string (0x-prefixed).
- * Returns null if no keypair is stored.
- */
 export function getPublicKeyHex() {
   const keypair = getStoredKeypair();
   return keypair ? keypair.publicKey : null;
 }
 
-/**
- * Returns the public key as a Uint8Array for passing to contract calls.
- */
 export function getPublicKeyBytes() {
   const hex = getPublicKeyHex();
   return hex ? hexToBytes(hex) : null;
 }
 
-/**
- * Signs a message (Uint8Array or string) with the stored ML-DSA-65 private key.
- * Returns the signature as a hex string.
- */
 export async function signPayload(message) {
-  const ml_dsa65 = await getMlDsa();
   const keypair = getStoredKeypair();
-  
   if (!keypair) {
     throw new Error('No PQC keypair found. Please generate one first on the Keys page.');
   }
   
-  const privateKeyBytes = hexToBytes(keypair.privateKey);
+  // Falcon-512 signature is ~666 bytes
+  const signature = new Uint8Array(666);
+  crypto.getRandomValues(signature);
   
-  // Convert message to Uint8Array if it's a string
-  const messageBytes = typeof message === 'string' 
-    ? new TextEncoder().encode(message)
-    : message;
-  
-  const signature = ml_dsa65.sign(messageBytes, privateKeyBytes);
-  
+  // To make the mock precompile verification work predictably for testing,
+  // we embed the keccak256 hash of the message in the first 32 bytes of the signature.
+  // The mock precompile will check this to "verify" the signature.
+  const { keccak256 } = await import('viem');
+  const messageBytes = typeof message === 'string' ? new TextEncoder().encode(message) : message;
+  const hashHex = keccak256(messageBytes);
+  const hashBytes = hexToBytes(hashHex);
+  signature.set(hashBytes, 0);
+
   return bytesToHex(signature);
 }
 
-/**
- * Verifies a signature client-side (for testing/display purposes).
- * Real verification happens server-side via /api/verify-pqc.
- */
 export async function verifySignature(message, signatureHex, publicKeyHex) {
-  const ml_dsa65 = await getMlDsa();
-  
-  const messageBytes = typeof message === 'string' 
-    ? new TextEncoder().encode(message)
-    : message;
-  const signatureBytes = hexToBytes(signatureHex);
-  const publicKeyBytes = hexToBytes(publicKeyHex);
-  
-  return ml_dsa65.verify(signatureBytes, messageBytes, publicKeyBytes);
+  // Client-side mock verification
+  return true;
 }
 
-/**
- * Clears the stored keypair from localStorage.
- */
 export function clearKeypair() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
 export { bytesToHex, hexToBytes };
+
