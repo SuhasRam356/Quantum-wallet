@@ -24,6 +24,13 @@ export function ZeroTrustManager({ children }) {
       return;
     }
 
+    // If the user hasn't generated PQC keys yet, bypass Zero-Trust until they do.
+    const hasKeys = !!localStorage.getItem('quantum_wallet_falcon_keypair');
+    if (!hasKeys) {
+      setSessionActive(true);
+      return;
+    }
+
     // Check if session exists in storage
     const lastAuth = localStorage.getItem('quantum_zt_last_auth');
     if (lastAuth && (Date.now() - parseInt(lastAuth)) < SESSION_TIMEOUT) {
@@ -35,6 +42,9 @@ export function ZeroTrustManager({ children }) {
 
     // Set interval to check session
     const interval = setInterval(() => {
+      const hasKeysInterval = !!localStorage.getItem('quantum_wallet_falcon_keypair');
+      if (!hasKeysInterval) return; // Still no keys
+
       const authTime = localStorage.getItem('quantum_zt_last_auth');
       if (address && (!authTime || (Date.now() - parseInt(authTime)) >= SESSION_TIMEOUT)) {
         setSessionActive(false);
