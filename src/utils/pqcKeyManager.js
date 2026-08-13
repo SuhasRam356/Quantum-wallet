@@ -138,6 +138,50 @@ export async function generateKeypair(password = "quantum_secure") {
   return keypair;
 }
 
+export function saveKeypair(keypair) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(keypair));
+}
+
+export async function proactiveKeyRotation(oldPassword, newPassword = "quantum_secure") {
+  const oldKeypair = getStoredKeypair();
+  if (!oldKeypair) throw new Error("No existing keypair to rotate.");
+
+  // Decrypt old keys to retrieve old ML-KEM private key
+  const oldDecryptedKeys = await decryptPrivateKeys(oldKeypair.encryptedData, oldPassword);
+
+  // Generate new keys (reusing logic from generateKeypair)
+  const privateKey = new Uint8Array(1281);
+  const publicKey = new Uint8Array(897);
+  crypto.getRandomValues(privateKey);
+  crypto.getRandomValues(publicKey);
+
+  const { ml_kem768 } = await import('@noble/post-quantum/ml-kem.js');
+  const kemKeys = ml_kem768.keygen();
+  
+  const privateKeysObj = {
+    privateKey: bytesToHex(privateKey),
+    mlKemPrivateKey: bytesToHex(kemKeys.secretKey),
+  };
+
+  const encryptedPayload = await encryptPrivateKeys(privateKeysObj, newPassword);
+
+  const newKeypair = {
+    publicKey: bytesToHex(publicKey),
+    mlKemPublicKey: bytesToHex(kemKeys.publicKey),
+    encryptedData: encryptedPayload,
+    algorithm: 'FALCON-512',
+    standard: 'NIST',
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    oldDecryptedKeys,
+    oldKeypair,
+    newDecryptedKeys: privateKeysObj,
+    newKeypair
+  };
+}
+
 export function getStoredKeypair() {
   if (typeof window === 'undefined') return null;
   const stored = localStorage.getItem(STORAGE_KEY);

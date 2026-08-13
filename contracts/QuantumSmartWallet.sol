@@ -48,6 +48,18 @@ contract QuantumSmartWallet is IAccount {
     RecoveryProposal public activeRecovery;
     mapping(address => bool) public hasApprovedRecovery;
 
+    struct ColdTransaction {
+        address target;
+        uint256 value;
+        bytes data;
+        uint256 executeAfter;
+        uint256 approvalCount;
+        bool active;
+    }
+
+    ColdTransaction public activeColdTx;
+    mapping(address => bool) public hasApprovedColdTx;
+
     event Executed(address indexed target, uint256 value, bytes data);
     event Deposited(address indexed sender, uint256 amount);
     event PqcKeyUpdated(uint8 indexed algorithmId, bytes32 indexed newHash);
@@ -209,6 +221,51 @@ contract QuantumSmartWallet is IAccount {
         activeRecovery.active = false;
         // Simplified for PoC: we don't clear all hasApprovedRecovery because active=false guards it, 
         // but a real implementation would use a recoveryNonce.
+    }
+
+    // --- Micro-segmentation (Cold Vaults) ---
+
+    function initiateColdTx(address target, uint256 value, bytes calldata data) external requireEntryPoint {
+        require(!activeColdTx.active, "Cold Tx already active");
+
+        activeColdTx = ColdTransaction({
+            target: target,
+            value: value,
+            data: data,
+            executeAfter: block.timestamp + 24 hours, // 24-hour timelock
+            approvalCount: 0,
+            active: true
+        });
+    }
+
+    function approveColdTx() external {
+        require(isGuardian[msg.sender], "Only guardian can approve");
+        require(activeColdTx.active, "No active cold tx");
+        require(!hasApprovedColdTx[msg.sender], "Already approved");
+
+        hasApprovedColdTx[msg.sender] = true;
+        activeColdTx.approvalCount++;
+    }
+
+    function executeColdTx() external returns (bytes memory) {
+        require(activeColdTx.active, "No active cold tx");
+        require(block.timestamp >= activeColdTx.executeAfter, "Timelock active");
+        
+        // Cold storage requires multi-sig threshold
+        uint256 threshold = (guardiansList.length / 2) + 1;
+        require(activeColdTx.approvalCount >= threshold, "Not enough approvals");
+
+        address target = activeColdTx.target;
+        uint256 value = activeColdTx.value;
+        bytes memory data = activeColdTx.data;
+
+        activeColdTx.active = false; // Prevent reentrancy
+
+        (bool success, bytes memory result) = target.call{value: value}(data);
+        require(success, "Cold transaction execution failed");
+
+        emit Executed(target, value, data);
+        return result;
     }
 
     /**

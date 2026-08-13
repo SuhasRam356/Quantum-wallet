@@ -222,5 +222,77 @@ describe("QuantumSmartWallet", function () {
       await expect(wallet.executeRecovery()).to.be.revertedWith("Not enough approvals");
     });
   });
+
+  describe("Micro-segmentation (Cold Vaults)", function () {
+    let guardian2;
+    let guardian3;
+    const targetAddress = "0x0000000000000000000000000000000000000222";
+    const transferAmount = hre.ethers.parseEther("0.1");
+
+    beforeEach(async function () {
+      const signers = await hre.ethers.getSigners();
+      guardian2 = signers[4];
+      guardian3 = signers[5];
+
+      await wallet.connect(entryPoint).addGuardian(validator.address);
+      await wallet.connect(entryPoint).addGuardian(guardian2.address);
+      await wallet.connect(entryPoint).addGuardian(guardian3.address);
+      
+      await owner.sendTransaction({
+        to: await wallet.getAddress(),
+        value: transferAmount,
+      });
+    });
+
+    it("Should allow EntryPoint to initiate a cold transaction", async function () {
+      await wallet.connect(entryPoint).initiateColdTx(targetAddress, transferAmount, "0x");
+      const coldTx = await wallet.activeColdTx();
+      expect(coldTx.active).to.be.true;
+      expect(coldTx.target).to.equal(targetAddress);
+      expect(coldTx.value).to.equal(transferAmount);
+    });
+
+    it("Should reject non-EntryPoint from initiating cold tx", async function () {
+      await expect(
+        wallet.connect(owner).initiateColdTx(targetAddress, transferAmount, "0x")
+      ).to.be.revertedWith("Only EntryPoint can call this");
+    });
+
+    it("Should allow guardians to approve cold tx", async function () {
+      await wallet.connect(entryPoint).initiateColdTx(targetAddress, transferAmount, "0x");
+      await wallet.connect(validator).approveColdTx();
+      await wallet.connect(guardian2).approveColdTx();
+      
+      const coldTx = await wallet.activeColdTx();
+      expect(coldTx.approvalCount).to.equal(2);
+    });
+
+    it("Should execute cold tx after timelock and threshold met", async function () {
+      await wallet.connect(entryPoint).initiateColdTx(targetAddress, transferAmount, "0x");
+      await wallet.connect(validator).approveColdTx();
+      await wallet.connect(guardian2).approveColdTx();
+      
+      // Fast forward time 24 hours
+      await hre.network.provider.send("evm_increaseTime", [24 * 60 * 60 + 1]);
+      await hre.network.provider.send("evm_mine");
+
+      const initialBalance = await hre.ethers.provider.getBalance(targetAddress);
+      await wallet.executeColdTx();
+      const finalBalance = await hre.ethers.provider.getBalance(targetAddress);
+      
+      expect(finalBalance - initialBalance).to.equal(transferAmount);
+
+      const coldTx = await wallet.activeColdTx();
+      expect(coldTx.active).to.be.false;
+    });
+
+    it("Should fail to execute cold tx if timelock hasn't passed", async function () {
+      await wallet.connect(entryPoint).initiateColdTx(targetAddress, transferAmount, "0x");
+      await wallet.connect(validator).approveColdTx();
+      await wallet.connect(guardian2).approveColdTx();
+      
+      await expect(wallet.executeColdTx()).to.be.revertedWith("Timelock active");
+    });
+  });
 });
 
