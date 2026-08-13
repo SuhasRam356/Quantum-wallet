@@ -40,7 +40,8 @@ export async function POST(req) {
         }
         const { FACTORY_ADDRESS, FACTORY_ABI } = await import('@/utils/constants');
         const factoryInterface = new ethers.Interface(FACTORY_ABI);
-        const factoryData = factoryInterface.encodeFunctionData("createAccount", [owner, ethers.id("placeholder_pqc_key_pending_registration"), 0]);
+        const placeholderHash = ethers.keccak256(ethers.toUtf8Bytes("placeholder_pqc_key_pending_registration"));
+        const factoryData = factoryInterface.encodeFunctionData("createAccount", [owner, 2, placeholderHash, 0]); // 2 = algorithmId
         initCode = ethers.concat([FACTORY_ADDRESS, factoryData]);
     }
 

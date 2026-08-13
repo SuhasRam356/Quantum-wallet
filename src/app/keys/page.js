@@ -53,11 +53,11 @@ export default function KeysPage() {
       // Compute keccak256 hash of the public key bytes
       const pubKeyHash = keccak256(keypair.publicKey);
       
-      // ABI-encode the setPqcPublicKeyHash call
+      // ABI-encode the setPqcPublicKey call
       const iface = new (await import('ethers')).Interface([
-        "function setPqcPublicKeyHash(bytes32 newHash)"
+        "function setPqcPublicKey(uint8 newAlgorithmId, bytes32 newHash)"
       ]);
-      const rawCallData = iface.encodeFunctionData("setPqcPublicKeyHash", [pubKeyHash]);
+      const rawCallData = iface.encodeFunctionData("setPqcPublicKey", [2, pubKeyHash]);
 
       // Step 1: Prepare UserOp via bundler
       const prepRes = await fetch('/api/bundler/prepare', {

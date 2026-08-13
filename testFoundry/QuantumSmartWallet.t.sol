@@ -12,7 +12,7 @@ contract QuantumSmartWalletTest is Test {
     QuantumSmartWallet public wallet;
     address public entryPoint;
     address public owner;
-    address public pqcValidator;
+    address public pqcPrecompile;
     
     // Simulate ML-DSA public key
     bytes public validPqcPubKey;
@@ -21,13 +21,13 @@ contract QuantumSmartWalletTest is Test {
     function setUp() public {
         entryPoint = address(1);
         owner = address(this); // Test contract is the owner
-        pqcValidator = address(0xABC);
+        pqcPrecompile = address(0xABC);
         
         validPqcPubKey = bytes("mock_valid_pqc_pub_key");
         validPqcPubKeyHash = keccak256(validPqcPubKey);
         
-        // Pass the PQC algorithm id (2 => FALCON-512) to match the constructor signature
-        wallet = new QuantumSmartWallet(entryPoint, 2, validPqcPubKeyHash, owner, pqcValidator);
+        // Constructor: entryPoint, pqcAlgorithmId, pqcPubKeyHash, owner, pqcPrecompile
+        wallet = new QuantumSmartWallet(entryPoint, 2, validPqcPubKeyHash, owner, pqcPrecompile);
         vm.deal(address(wallet), 10 ether);
     }
 
@@ -47,7 +47,7 @@ contract QuantumSmartWalletTest is Test {
      * @dev Fuzz test: Ensure that ANY signature less than 130 bytes fails validation.
      */
     function testFuzz_ValidateUserOpShortSignature(bytes calldata shortSig) public {
-        vm.assume(shortSig.length < 130);
+        vm.assume(shortSig.length < 1628);
         
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(wallet),

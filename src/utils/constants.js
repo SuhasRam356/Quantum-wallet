@@ -1,4 +1,5 @@
-export const CONTRACT_ADDRESS = "0xF7512A6f3F8418054152728e5C4b12F1fF611Af6";
+export const CONTRACT_ADDRESS = "0x6F0d410f7f0514A65fAB25431F61f4eDdf898c3A";
+export const FACTORY_ADDRESS = "0x403b90554E54D7d30A09b11eCB0e95B16F34C68c";
 
 export const CONTRACT_ABI = [
   {
@@ -7,6 +8,11 @@ export const CONTRACT_ABI = [
         "internalType": "address",
         "name": "_entryPoint",
         "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "_pqcAlgorithmId",
+        "type": "uint8"
       },
       {
         "internalType": "bytes32",
@@ -20,7 +26,7 @@ export const CONTRACT_ABI = [
       },
       {
         "internalType": "address",
-        "name": "_pqcValidator",
+        "name": "_pqcPrecompile",
         "type": "address"
       }
     ],
@@ -141,6 +147,12 @@ export const CONTRACT_ABI = [
     "inputs": [
       {
         "indexed": true,
+        "internalType": "uint8",
+        "name": "algorithmId",
+        "type": "uint8"
+      },
+      {
+        "indexed": true,
         "internalType": "bytes32",
         "name": "newHash",
         "type": "bytes32"
@@ -169,6 +181,82 @@ export const CONTRACT_ABI = [
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "activeColdTx",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "executeAfter",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "approvalCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "activeRecovery",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "newAlgorithmId",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "newPubKeyHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "executeAfter",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "approvalCount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -195,27 +283,17 @@ export const CONTRACT_ABI = [
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "encryptedVaultFiles",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
+    "inputs": [],
+    "name": "approveColdTx",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "approveRecovery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -261,19 +339,150 @@ export const CONTRACT_ABI = [
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "executeColdTx",
+    "outputs": [
       {
-        "internalType": "address",
+        "internalType": "bytes",
         "name": "",
-        "type": "address"
-      },
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "executeRecovery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
       }
     ],
-    "name": "guardians",
+    "name": "guardiansList",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "hasApprovedColdTx",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "hasApprovedRecovery",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "initiateColdTx",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "newAlgorithmId",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "newPubKeyHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "initiateRecovery",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "isGuardian",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
     "outputs": [
       {
         "internalType": "address",
@@ -286,7 +495,20 @@ export const CONTRACT_ABI = [
   },
   {
     "inputs": [],
-    "name": "owner",
+    "name": "pqcAlgorithmId",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pqcPrecompile",
     "outputs": [
       {
         "internalType": "address",
@@ -311,19 +533,6 @@ export const CONTRACT_ABI = [
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "pqcValidator",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "string",
@@ -339,25 +548,24 @@ export const CONTRACT_ABI = [
   {
     "inputs": [
       {
+        "internalType": "uint8",
+        "name": "newAlgorithmId",
+        "type": "uint8"
+      },
+      {
         "internalType": "bytes32",
         "name": "newHash",
         "type": "bytes32"
       }
     ],
-    "name": "setPqcPublicKeyHash",
+    "name": "setPqcPublicKey",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "userIdentities",
+    "inputs": [],
+    "name": "userIdentity",
     "outputs": [
       {
         "internalType": "string",
@@ -445,13 +653,29 @@ export const CONTRACT_ABI = [
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "vaultFiles",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "stateMutability": "payable",
     "type": "receive"
   }
 ];
-
-export const FACTORY_ADDRESS = "0xA08372471185Fc8C6D701750634d5e2DbaE80144";
-
 export const FACTORY_ABI = [
   {
     "inputs": [
@@ -462,7 +686,7 @@ export const FACTORY_ABI = [
       },
       {
         "internalType": "address",
-        "name": "_pqcValidator",
+        "name": "_pqcPrecompile",
         "type": "address"
       }
     ],
@@ -522,6 +746,11 @@ export const FACTORY_ABI = [
         "type": "address"
       },
       {
+        "internalType": "uint8",
+        "name": "pqcAlgorithmId",
+        "type": "uint8"
+      },
+      {
         "internalType": "bytes32",
         "name": "pqcPubKeyHash",
         "type": "bytes32"
@@ -564,6 +793,11 @@ export const FACTORY_ABI = [
         "type": "address"
       },
       {
+        "internalType": "uint8",
+        "name": "pqcAlgorithmId",
+        "type": "uint8"
+      },
+      {
         "internalType": "bytes32",
         "name": "pqcPubKeyHash",
         "type": "bytes32"
@@ -587,7 +821,7 @@ export const FACTORY_ABI = [
   },
   {
     "inputs": [],
-    "name": "pqcValidator",
+    "name": "pqcPrecompile",
     "outputs": [
       {
         "internalType": "address",

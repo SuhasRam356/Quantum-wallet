@@ -37,12 +37,18 @@ export class QuantumSmartWalletFactory extends ethereum.SmartContract {
     return new QuantumSmartWalletFactory("QuantumSmartWalletFactory", address);
   }
 
-  createAccount(owner: Address, pqcPubKeyHash: Bytes, salt: BigInt): Address {
+  createAccount(
+    owner: Address,
+    pqcAlgorithmId: i32,
+    pqcPubKeyHash: Bytes,
+    salt: BigInt,
+  ): Address {
     let result = super.call(
       "createAccount",
-      "createAccount(address,bytes32,uint256):(address)",
+      "createAccount(address,uint8,bytes32,uint256):(address)",
       [
         ethereum.Value.fromAddress(owner),
+        ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(pqcAlgorithmId)),
         ethereum.Value.fromFixedBytes(pqcPubKeyHash),
         ethereum.Value.fromUnsignedBigInt(salt),
       ],
@@ -53,14 +59,16 @@ export class QuantumSmartWalletFactory extends ethereum.SmartContract {
 
   try_createAccount(
     owner: Address,
+    pqcAlgorithmId: i32,
     pqcPubKeyHash: Bytes,
     salt: BigInt,
   ): ethereum.CallResult<Address> {
     let result = super.tryCall(
       "createAccount",
-      "createAccount(address,bytes32,uint256):(address)",
+      "createAccount(address,uint8,bytes32,uint256):(address)",
       [
         ethereum.Value.fromAddress(owner),
+        ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(pqcAlgorithmId)),
         ethereum.Value.fromFixedBytes(pqcPubKeyHash),
         ethereum.Value.fromUnsignedBigInt(salt),
       ],
@@ -72,12 +80,33 @@ export class QuantumSmartWalletFactory extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
-  getAddress(owner: Address, pqcPubKeyHash: Bytes, salt: BigInt): Address {
+  entryPoint(): Address {
+    let result = super.call("entryPoint", "entryPoint():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_entryPoint(): ethereum.CallResult<Address> {
+    let result = super.tryCall("entryPoint", "entryPoint():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  getAddress(
+    owner: Address,
+    pqcAlgorithmId: i32,
+    pqcPubKeyHash: Bytes,
+    salt: BigInt,
+  ): Address {
     let result = super.call(
       "getAddress",
-      "getAddress(address,bytes32,uint256):(address)",
+      "getAddress(address,uint8,bytes32,uint256):(address)",
       [
         ethereum.Value.fromAddress(owner),
+        ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(pqcAlgorithmId)),
         ethereum.Value.fromFixedBytes(pqcPubKeyHash),
         ethereum.Value.fromUnsignedBigInt(salt),
       ],
@@ -88,14 +117,16 @@ export class QuantumSmartWalletFactory extends ethereum.SmartContract {
 
   try_getAddress(
     owner: Address,
+    pqcAlgorithmId: i32,
     pqcPubKeyHash: Bytes,
     salt: BigInt,
   ): ethereum.CallResult<Address> {
     let result = super.tryCall(
       "getAddress",
-      "getAddress(address,bytes32,uint256):(address)",
+      "getAddress(address,uint8,bytes32,uint256):(address)",
       [
         ethereum.Value.fromAddress(owner),
+        ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(pqcAlgorithmId)),
         ethereum.Value.fromFixedBytes(pqcPubKeyHash),
         ethereum.Value.fromUnsignedBigInt(salt),
       ],
@@ -105,6 +136,59 @@ export class QuantumSmartWalletFactory extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  pqcPrecompile(): Address {
+    let result = super.call("pqcPrecompile", "pqcPrecompile():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_pqcPrecompile(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "pqcPrecompile",
+      "pqcPrecompile():(address)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+}
+
+export class ConstructorCall extends ethereum.Call {
+  get inputs(): ConstructorCall__Inputs {
+    return new ConstructorCall__Inputs(this);
+  }
+
+  get outputs(): ConstructorCall__Outputs {
+    return new ConstructorCall__Outputs(this);
+  }
+}
+
+export class ConstructorCall__Inputs {
+  _call: ConstructorCall;
+
+  constructor(call: ConstructorCall) {
+    this._call = call;
+  }
+
+  get _entryPoint(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get _pqcPrecompile(): Address {
+    return this._call.inputValues[1].value.toAddress();
+  }
+}
+
+export class ConstructorCall__Outputs {
+  _call: ConstructorCall;
+
+  constructor(call: ConstructorCall) {
+    this._call = call;
   }
 }
 
@@ -129,12 +213,16 @@ export class CreateAccountCall__Inputs {
     return this._call.inputValues[0].value.toAddress();
   }
 
+  get pqcAlgorithmId(): i32 {
+    return this._call.inputValues[1].value.toI32();
+  }
+
   get pqcPubKeyHash(): Bytes {
-    return this._call.inputValues[1].value.toBytes();
+    return this._call.inputValues[2].value.toBytes();
   }
 
   get salt(): BigInt {
-    return this._call.inputValues[2].value.toBigInt();
+    return this._call.inputValues[3].value.toBigInt();
   }
 }
 

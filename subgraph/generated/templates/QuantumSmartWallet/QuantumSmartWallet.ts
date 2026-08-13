@@ -115,8 +115,12 @@ export class PqcKeyUpdated__Params {
     this._event = event;
   }
 
+  get algorithmId(): i32 {
+    return this._event.parameters[0].value.toI32();
+  }
+
   get newHash(): Bytes {
-    return this._event.parameters[0].value.toBytes();
+    return this._event.parameters[1].value.toBytes();
   }
 }
 
@@ -139,6 +143,129 @@ export class VaultFileAdded__Params {
 
   get ipfsCid(): string {
     return this._event.parameters[1].value.toString();
+  }
+}
+
+export class QuantumSmartWallet__activeColdTxResult {
+  value0: Address;
+  value1: BigInt;
+  value2: Bytes;
+  value3: BigInt;
+  value4: BigInt;
+  value5: boolean;
+
+  constructor(
+    value0: Address,
+    value1: BigInt,
+    value2: Bytes,
+    value3: BigInt,
+    value4: BigInt,
+    value5: boolean,
+  ) {
+    this.value0 = value0;
+    this.value1 = value1;
+    this.value2 = value2;
+    this.value3 = value3;
+    this.value4 = value4;
+    this.value5 = value5;
+  }
+
+  toMap(): TypedMap<string, ethereum.Value> {
+    let map = new TypedMap<string, ethereum.Value>();
+    map.set("value0", ethereum.Value.fromAddress(this.value0));
+    map.set("value1", ethereum.Value.fromUnsignedBigInt(this.value1));
+    map.set("value2", ethereum.Value.fromBytes(this.value2));
+    map.set("value3", ethereum.Value.fromUnsignedBigInt(this.value3));
+    map.set("value4", ethereum.Value.fromUnsignedBigInt(this.value4));
+    map.set("value5", ethereum.Value.fromBoolean(this.value5));
+    return map;
+  }
+
+  getTarget(): Address {
+    return this.value0;
+  }
+
+  getValue(): BigInt {
+    return this.value1;
+  }
+
+  getData(): Bytes {
+    return this.value2;
+  }
+
+  getExecuteAfter(): BigInt {
+    return this.value3;
+  }
+
+  getApprovalCount(): BigInt {
+    return this.value4;
+  }
+
+  getActive(): boolean {
+    return this.value5;
+  }
+}
+
+export class QuantumSmartWallet__activeRecoveryResult {
+  value0: Address;
+  value1: i32;
+  value2: Bytes;
+  value3: BigInt;
+  value4: BigInt;
+  value5: boolean;
+
+  constructor(
+    value0: Address,
+    value1: i32,
+    value2: Bytes,
+    value3: BigInt,
+    value4: BigInt,
+    value5: boolean,
+  ) {
+    this.value0 = value0;
+    this.value1 = value1;
+    this.value2 = value2;
+    this.value3 = value3;
+    this.value4 = value4;
+    this.value5 = value5;
+  }
+
+  toMap(): TypedMap<string, ethereum.Value> {
+    let map = new TypedMap<string, ethereum.Value>();
+    map.set("value0", ethereum.Value.fromAddress(this.value0));
+    map.set(
+      "value1",
+      ethereum.Value.fromUnsignedBigInt(BigInt.fromI32(this.value1)),
+    );
+    map.set("value2", ethereum.Value.fromFixedBytes(this.value2));
+    map.set("value3", ethereum.Value.fromUnsignedBigInt(this.value3));
+    map.set("value4", ethereum.Value.fromUnsignedBigInt(this.value4));
+    map.set("value5", ethereum.Value.fromBoolean(this.value5));
+    return map;
+  }
+
+  getNewOwner(): Address {
+    return this.value0;
+  }
+
+  getNewAlgorithmId(): i32 {
+    return this.value1;
+  }
+
+  getNewPubKeyHash(): Bytes {
+    return this.value2;
+  }
+
+  getExecuteAfter(): BigInt {
+    return this.value3;
+  }
+
+  getApprovalCount(): BigInt {
+    return this.value4;
+  }
+
+  getActive(): boolean {
+    return this.value5;
   }
 }
 
@@ -185,36 +312,82 @@ export class QuantumSmartWallet extends ethereum.SmartContract {
     return new QuantumSmartWallet("QuantumSmartWallet", address);
   }
 
-  encryptedVaultFiles(param0: Address, param1: BigInt): string {
+  activeColdTx(): QuantumSmartWallet__activeColdTxResult {
     let result = super.call(
-      "encryptedVaultFiles",
-      "encryptedVaultFiles(address,uint256):(string)",
-      [
-        ethereum.Value.fromAddress(param0),
-        ethereum.Value.fromUnsignedBigInt(param1),
-      ],
+      "activeColdTx",
+      "activeColdTx():(address,uint256,bytes,uint256,uint256,bool)",
+      [],
     );
 
-    return result[0].toString();
+    return new QuantumSmartWallet__activeColdTxResult(
+      result[0].toAddress(),
+      result[1].toBigInt(),
+      result[2].toBytes(),
+      result[3].toBigInt(),
+      result[4].toBigInt(),
+      result[5].toBoolean(),
+    );
   }
 
-  try_encryptedVaultFiles(
-    param0: Address,
-    param1: BigInt,
-  ): ethereum.CallResult<string> {
+  try_activeColdTx(): ethereum.CallResult<QuantumSmartWallet__activeColdTxResult> {
     let result = super.tryCall(
-      "encryptedVaultFiles",
-      "encryptedVaultFiles(address,uint256):(string)",
-      [
-        ethereum.Value.fromAddress(param0),
-        ethereum.Value.fromUnsignedBigInt(param1),
-      ],
+      "activeColdTx",
+      "activeColdTx():(address,uint256,bytes,uint256,uint256,bool)",
+      [],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toString());
+    return ethereum.CallResult.fromValue(
+      new QuantumSmartWallet__activeColdTxResult(
+        value[0].toAddress(),
+        value[1].toBigInt(),
+        value[2].toBytes(),
+        value[3].toBigInt(),
+        value[4].toBigInt(),
+        value[5].toBoolean(),
+      ),
+    );
+  }
+
+  activeRecovery(): QuantumSmartWallet__activeRecoveryResult {
+    let result = super.call(
+      "activeRecovery",
+      "activeRecovery():(address,uint8,bytes32,uint256,uint256,bool)",
+      [],
+    );
+
+    return new QuantumSmartWallet__activeRecoveryResult(
+      result[0].toAddress(),
+      result[1].toI32(),
+      result[2].toBytes(),
+      result[3].toBigInt(),
+      result[4].toBigInt(),
+      result[5].toBoolean(),
+    );
+  }
+
+  try_activeRecovery(): ethereum.CallResult<QuantumSmartWallet__activeRecoveryResult> {
+    let result = super.tryCall(
+      "activeRecovery",
+      "activeRecovery():(address,uint8,bytes32,uint256,uint256,bool)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      new QuantumSmartWallet__activeRecoveryResult(
+        value[0].toAddress(),
+        value[1].toI32(),
+        value[2].toBytes(),
+        value[3].toBigInt(),
+        value[4].toBigInt(),
+        value[5].toBoolean(),
+      ),
+    );
   }
 
   entryPoint(): Address {
@@ -267,33 +440,107 @@ export class QuantumSmartWallet extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
-  guardians(param0: Address, param1: BigInt): Address {
+  executeColdTx(): Bytes {
+    let result = super.call("executeColdTx", "executeColdTx():(bytes)", []);
+
+    return result[0].toBytes();
+  }
+
+  try_executeColdTx(): ethereum.CallResult<Bytes> {
+    let result = super.tryCall("executeColdTx", "executeColdTx():(bytes)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBytes());
+  }
+
+  guardiansList(param0: BigInt): Address {
     let result = super.call(
-      "guardians",
-      "guardians(address,uint256):(address)",
-      [
-        ethereum.Value.fromAddress(param0),
-        ethereum.Value.fromUnsignedBigInt(param1),
-      ],
+      "guardiansList",
+      "guardiansList(uint256):(address)",
+      [ethereum.Value.fromUnsignedBigInt(param0)],
     );
 
     return result[0].toAddress();
   }
 
-  try_guardians(param0: Address, param1: BigInt): ethereum.CallResult<Address> {
+  try_guardiansList(param0: BigInt): ethereum.CallResult<Address> {
     let result = super.tryCall(
-      "guardians",
-      "guardians(address,uint256):(address)",
-      [
-        ethereum.Value.fromAddress(param0),
-        ethereum.Value.fromUnsignedBigInt(param1),
-      ],
+      "guardiansList",
+      "guardiansList(uint256):(address)",
+      [ethereum.Value.fromUnsignedBigInt(param0)],
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  hasApprovedColdTx(param0: Address): boolean {
+    let result = super.call(
+      "hasApprovedColdTx",
+      "hasApprovedColdTx(address):(bool)",
+      [ethereum.Value.fromAddress(param0)],
+    );
+
+    return result[0].toBoolean();
+  }
+
+  try_hasApprovedColdTx(param0: Address): ethereum.CallResult<boolean> {
+    let result = super.tryCall(
+      "hasApprovedColdTx",
+      "hasApprovedColdTx(address):(bool)",
+      [ethereum.Value.fromAddress(param0)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
+  hasApprovedRecovery(param0: Address): boolean {
+    let result = super.call(
+      "hasApprovedRecovery",
+      "hasApprovedRecovery(address):(bool)",
+      [ethereum.Value.fromAddress(param0)],
+    );
+
+    return result[0].toBoolean();
+  }
+
+  try_hasApprovedRecovery(param0: Address): ethereum.CallResult<boolean> {
+    let result = super.tryCall(
+      "hasApprovedRecovery",
+      "hasApprovedRecovery(address):(bool)",
+      [ethereum.Value.fromAddress(param0)],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
+  isGuardian(param0: Address): boolean {
+    let result = super.call("isGuardian", "isGuardian(address):(bool)", [
+      ethereum.Value.fromAddress(param0),
+    ]);
+
+    return result[0].toBoolean();
+  }
+
+  try_isGuardian(param0: Address): ethereum.CallResult<boolean> {
+    let result = super.tryCall("isGuardian", "isGuardian(address):(bool)", [
+      ethereum.Value.fromAddress(param0),
+    ]);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBoolean());
   }
 
   owner(): Address {
@@ -304,6 +551,44 @@ export class QuantumSmartWallet extends ethereum.SmartContract {
 
   try_owner(): ethereum.CallResult<Address> {
     let result = super.tryCall("owner", "owner():(address)", []);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
+  pqcAlgorithmId(): i32 {
+    let result = super.call("pqcAlgorithmId", "pqcAlgorithmId():(uint8)", []);
+
+    return result[0].toI32();
+  }
+
+  try_pqcAlgorithmId(): ethereum.CallResult<i32> {
+    let result = super.tryCall(
+      "pqcAlgorithmId",
+      "pqcAlgorithmId():(uint8)",
+      [],
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toI32());
+  }
+
+  pqcPrecompile(): Address {
+    let result = super.call("pqcPrecompile", "pqcPrecompile():(address)", []);
+
+    return result[0].toAddress();
+  }
+
+  try_pqcPrecompile(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "pqcPrecompile",
+      "pqcPrecompile():(address)",
+      [],
+    );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -330,37 +615,14 @@ export class QuantumSmartWallet extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBytes());
   }
 
-  pqcValidator(): Address {
-    let result = super.call("pqcValidator", "pqcValidator():(address)", []);
-
-    return result[0].toAddress();
-  }
-
-  try_pqcValidator(): ethereum.CallResult<Address> {
-    let result = super.tryCall("pqcValidator", "pqcValidator():(address)", []);
-    if (result.reverted) {
-      return new ethereum.CallResult();
-    }
-    let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toAddress());
-  }
-
-  userIdentities(param0: Address): string {
-    let result = super.call(
-      "userIdentities",
-      "userIdentities(address):(string)",
-      [ethereum.Value.fromAddress(param0)],
-    );
+  userIdentity(): string {
+    let result = super.call("userIdentity", "userIdentity():(string)", []);
 
     return result[0].toString();
   }
 
-  try_userIdentities(param0: Address): ethereum.CallResult<string> {
-    let result = super.tryCall(
-      "userIdentities",
-      "userIdentities(address):(string)",
-      [ethereum.Value.fromAddress(param0)],
-    );
+  try_userIdentity(): ethereum.CallResult<string> {
+    let result = super.tryCall("userIdentity", "userIdentity():(string)", []);
     if (result.reverted) {
       return new ethereum.CallResult();
     }
@@ -406,6 +668,25 @@ export class QuantumSmartWallet extends ethereum.SmartContract {
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
+
+  vaultFiles(param0: BigInt): string {
+    let result = super.call("vaultFiles", "vaultFiles(uint256):(string)", [
+      ethereum.Value.fromUnsignedBigInt(param0),
+    ]);
+
+    return result[0].toString();
+  }
+
+  try_vaultFiles(param0: BigInt): ethereum.CallResult<string> {
+    let result = super.tryCall("vaultFiles", "vaultFiles(uint256):(string)", [
+      ethereum.Value.fromUnsignedBigInt(param0),
+    ]);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toString());
+  }
 }
 
 export class ConstructorCall extends ethereum.Call {
@@ -429,16 +710,20 @@ export class ConstructorCall__Inputs {
     return this._call.inputValues[0].value.toAddress();
   }
 
+  get _pqcAlgorithmId(): i32 {
+    return this._call.inputValues[1].value.toI32();
+  }
+
   get _pqcPubKeyHash(): Bytes {
-    return this._call.inputValues[1].value.toBytes();
+    return this._call.inputValues[2].value.toBytes();
   }
 
   get _initialOwner(): Address {
-    return this._call.inputValues[2].value.toAddress();
+    return this._call.inputValues[3].value.toAddress();
   }
 
-  get _pqcValidator(): Address {
-    return this._call.inputValues[3].value.toAddress();
+  get _pqcPrecompile(): Address {
+    return this._call.inputValues[4].value.toAddress();
   }
 }
 
@@ -510,6 +795,58 @@ export class AddVaultFileCall__Outputs {
   }
 }
 
+export class ApproveColdTxCall extends ethereum.Call {
+  get inputs(): ApproveColdTxCall__Inputs {
+    return new ApproveColdTxCall__Inputs(this);
+  }
+
+  get outputs(): ApproveColdTxCall__Outputs {
+    return new ApproveColdTxCall__Outputs(this);
+  }
+}
+
+export class ApproveColdTxCall__Inputs {
+  _call: ApproveColdTxCall;
+
+  constructor(call: ApproveColdTxCall) {
+    this._call = call;
+  }
+}
+
+export class ApproveColdTxCall__Outputs {
+  _call: ApproveColdTxCall;
+
+  constructor(call: ApproveColdTxCall) {
+    this._call = call;
+  }
+}
+
+export class ApproveRecoveryCall extends ethereum.Call {
+  get inputs(): ApproveRecoveryCall__Inputs {
+    return new ApproveRecoveryCall__Inputs(this);
+  }
+
+  get outputs(): ApproveRecoveryCall__Outputs {
+    return new ApproveRecoveryCall__Outputs(this);
+  }
+}
+
+export class ApproveRecoveryCall__Inputs {
+  _call: ApproveRecoveryCall;
+
+  constructor(call: ApproveRecoveryCall) {
+    this._call = call;
+  }
+}
+
+export class ApproveRecoveryCall__Outputs {
+  _call: ApproveRecoveryCall;
+
+  constructor(call: ApproveRecoveryCall) {
+    this._call = call;
+  }
+}
+
 export class ExecuteCall extends ethereum.Call {
   get inputs(): ExecuteCall__Inputs {
     return new ExecuteCall__Inputs(this);
@@ -552,6 +889,138 @@ export class ExecuteCall__Outputs {
   }
 }
 
+export class ExecuteColdTxCall extends ethereum.Call {
+  get inputs(): ExecuteColdTxCall__Inputs {
+    return new ExecuteColdTxCall__Inputs(this);
+  }
+
+  get outputs(): ExecuteColdTxCall__Outputs {
+    return new ExecuteColdTxCall__Outputs(this);
+  }
+}
+
+export class ExecuteColdTxCall__Inputs {
+  _call: ExecuteColdTxCall;
+
+  constructor(call: ExecuteColdTxCall) {
+    this._call = call;
+  }
+}
+
+export class ExecuteColdTxCall__Outputs {
+  _call: ExecuteColdTxCall;
+
+  constructor(call: ExecuteColdTxCall) {
+    this._call = call;
+  }
+
+  get value0(): Bytes {
+    return this._call.outputValues[0].value.toBytes();
+  }
+}
+
+export class ExecuteRecoveryCall extends ethereum.Call {
+  get inputs(): ExecuteRecoveryCall__Inputs {
+    return new ExecuteRecoveryCall__Inputs(this);
+  }
+
+  get outputs(): ExecuteRecoveryCall__Outputs {
+    return new ExecuteRecoveryCall__Outputs(this);
+  }
+}
+
+export class ExecuteRecoveryCall__Inputs {
+  _call: ExecuteRecoveryCall;
+
+  constructor(call: ExecuteRecoveryCall) {
+    this._call = call;
+  }
+}
+
+export class ExecuteRecoveryCall__Outputs {
+  _call: ExecuteRecoveryCall;
+
+  constructor(call: ExecuteRecoveryCall) {
+    this._call = call;
+  }
+}
+
+export class InitiateColdTxCall extends ethereum.Call {
+  get inputs(): InitiateColdTxCall__Inputs {
+    return new InitiateColdTxCall__Inputs(this);
+  }
+
+  get outputs(): InitiateColdTxCall__Outputs {
+    return new InitiateColdTxCall__Outputs(this);
+  }
+}
+
+export class InitiateColdTxCall__Inputs {
+  _call: InitiateColdTxCall;
+
+  constructor(call: InitiateColdTxCall) {
+    this._call = call;
+  }
+
+  get target(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get value(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
+  }
+
+  get data(): Bytes {
+    return this._call.inputValues[2].value.toBytes();
+  }
+}
+
+export class InitiateColdTxCall__Outputs {
+  _call: InitiateColdTxCall;
+
+  constructor(call: InitiateColdTxCall) {
+    this._call = call;
+  }
+}
+
+export class InitiateRecoveryCall extends ethereum.Call {
+  get inputs(): InitiateRecoveryCall__Inputs {
+    return new InitiateRecoveryCall__Inputs(this);
+  }
+
+  get outputs(): InitiateRecoveryCall__Outputs {
+    return new InitiateRecoveryCall__Outputs(this);
+  }
+}
+
+export class InitiateRecoveryCall__Inputs {
+  _call: InitiateRecoveryCall;
+
+  constructor(call: InitiateRecoveryCall) {
+    this._call = call;
+  }
+
+  get newOwner(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get newAlgorithmId(): i32 {
+    return this._call.inputValues[1].value.toI32();
+  }
+
+  get newPubKeyHash(): Bytes {
+    return this._call.inputValues[2].value.toBytes();
+  }
+}
+
+export class InitiateRecoveryCall__Outputs {
+  _call: InitiateRecoveryCall;
+
+  constructor(call: InitiateRecoveryCall) {
+    this._call = call;
+  }
+}
+
 export class SetIdentityCall extends ethereum.Call {
   get inputs(): SetIdentityCall__Inputs {
     return new SetIdentityCall__Inputs(this);
@@ -582,32 +1051,36 @@ export class SetIdentityCall__Outputs {
   }
 }
 
-export class SetPqcPublicKeyHashCall extends ethereum.Call {
-  get inputs(): SetPqcPublicKeyHashCall__Inputs {
-    return new SetPqcPublicKeyHashCall__Inputs(this);
+export class SetPqcPublicKeyCall extends ethereum.Call {
+  get inputs(): SetPqcPublicKeyCall__Inputs {
+    return new SetPqcPublicKeyCall__Inputs(this);
   }
 
-  get outputs(): SetPqcPublicKeyHashCall__Outputs {
-    return new SetPqcPublicKeyHashCall__Outputs(this);
+  get outputs(): SetPqcPublicKeyCall__Outputs {
+    return new SetPqcPublicKeyCall__Outputs(this);
   }
 }
 
-export class SetPqcPublicKeyHashCall__Inputs {
-  _call: SetPqcPublicKeyHashCall;
+export class SetPqcPublicKeyCall__Inputs {
+  _call: SetPqcPublicKeyCall;
 
-  constructor(call: SetPqcPublicKeyHashCall) {
+  constructor(call: SetPqcPublicKeyCall) {
     this._call = call;
   }
 
+  get newAlgorithmId(): i32 {
+    return this._call.inputValues[0].value.toI32();
+  }
+
   get newHash(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
+    return this._call.inputValues[1].value.toBytes();
   }
 }
 
-export class SetPqcPublicKeyHashCall__Outputs {
-  _call: SetPqcPublicKeyHashCall;
+export class SetPqcPublicKeyCall__Outputs {
+  _call: SetPqcPublicKeyCall;
 
-  constructor(call: SetPqcPublicKeyHashCall) {
+  constructor(call: SetPqcPublicKeyCall) {
     this._call = call;
   }
 }

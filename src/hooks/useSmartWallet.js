@@ -34,7 +34,7 @@ export function useSmartWallet() {
           address: FACTORY_ADDRESS,
           abi: FACTORY_ABI,
           functionName: 'getAddress',
-          args: [address, pqcPubKeyHash, 0n]
+          args: [address, 2, pqcPubKeyHash, 0n] // 2 = FALCON-512
         });
 
         setSmartWalletAddress(computedAddr);

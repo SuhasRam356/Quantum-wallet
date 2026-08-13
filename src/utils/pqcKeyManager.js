@@ -223,9 +223,9 @@ export async function signPayload(message) {
   // To make the mock precompile verification work predictably for testing,
   // we embed the keccak256 hash of the message in the first 32 bytes of the signature.
   // The mock precompile will check this to "verify" the signature.
-  const { keccak256 } = await import('viem');
+  const { hashMessage } = await import('viem');
   const messageBytes = typeof message === 'string' ? new TextEncoder().encode(message) : message;
-  const hashHex = keccak256(messageBytes);
+  const hashHex = hashMessage({ raw: messageBytes });
   const hashBytes = hexToBytes(hashHex);
   signature.set(hashBytes, 0);
 
