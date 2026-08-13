@@ -26,7 +26,8 @@ contract QuantumSmartWalletTest is Test {
         validPqcPubKey = bytes("mock_valid_pqc_pub_key");
         validPqcPubKeyHash = keccak256(validPqcPubKey);
         
-        wallet = new QuantumSmartWallet(entryPoint, validPqcPubKeyHash, owner, pqcValidator);
+        // Pass the PQC algorithm id (2 => FALCON-512) to match the constructor signature
+        wallet = new QuantumSmartWallet(entryPoint, 2, validPqcPubKeyHash, owner, pqcValidator);
         vm.deal(address(wallet), 10 ether);
     }
 
@@ -65,4 +66,3 @@ contract QuantumSmartWalletTest is Test {
         assertEq(result, 1); // SIG_VALIDATION_FAILED
     }
 }
-
