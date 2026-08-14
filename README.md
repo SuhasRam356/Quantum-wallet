@@ -83,7 +83,32 @@ When you upload a backup file:
 - This hybrid payload is then securely stored on the decentralized IPFS network.
 This mathematically guarantees that nobody (not even someone saving the file to decrypt later with a quantum computer) can ever read your data!
 
-### 4. Stunning Analytics Dashboard
+### 4. Zero-Trust Continuous Authentication
+In traditional systems, once you log in, the system trusts you completely until you log out. If someone hacks your browser session, they get full control. We fixed this by implementing a **Zero-Trust Manager**. 
+Our wallet never assumes you are who you say you are. Every few minutes, or when you attempt a sensitive action, the wallet requires you to cryptographically prove your identity in the background using your local Post-Quantum Keystore. If the post-quantum keys are missing or the password is wrong, the entire application locks down instantly.
+
+### 5. Multi-Tiered "Cold" Vaults (Micro-Segmentation)
+Not all transactions should be treated the same. For moving large amounts of money, you need extreme security. We built a **Cold Vault** system directly into the smart contract. 
+If you initiate a "Cold Transaction", the funds are not sent immediately. Instead:
+- A mandatory timelock starts (e.g., a 24-hour waiting period).
+- Your trusted "Guardians" are notified and must mathematically approve the transaction.
+- Only when the time has passed and enough Guardians have approved will the funds move. This gives you plenty of time to cancel a transaction if a hacker tries to steal your savings.
+
+### 6. Quantum Key Distribution (QKD) Guardian Setup
+How do you safely give recovery access to your trusted Guardians without a hacker intercepting the keys over the internet? We built an interactive simulation of the famous **BB84 QKD Protocol**.
+This feature demonstrates how photons (particles of light) can be used to transmit a secret key. Because of the laws of quantum physics, if a hacker tries to "look" at the photons while they are being sent, the photons change! The wallet detects this eavesdropping and alerts you immediately, ensuring perfectly secure communication with your Guardians.
+
+### 7. Automated Vault Re-Encryption (Key Rotation)
+If you ever suspect your private key has been compromised, or if you simply want to upgrade to a newer algorithm (like moving from ML-DSA to FALCON), our wallet handles everything automatically.
+With one click, the system:
+1. Generates your completely new post-quantum keys.
+2. Downloads all your currently encrypted backup files from the decentralized IPFS network.
+3. Decrypts them locally in your browser using your old key.
+4. Immediately re-encrypts them using your brand new key.
+5. Re-uploads the newly secured files back to IPFS.
+You don't have to manually move or secure your data; the wallet rotates your keys and secures your data instantly.
+
+### 8. Stunning Analytics Dashboard
 We completely redesigned the UI to feature a beautiful Glassmorphic design. It feels premium and professional, with glowing neon accents, live animated charts, and completely responsive components.
 
 ---
