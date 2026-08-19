@@ -1,0 +1,15 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "MockPQCPrecompile",
+  "sourceName": "contracts/MockPQCPrecompile.sol",
+  "abi": [
+    {
+      "stateMutability": "nonpayable",
+      "type": "fallback"
+    }
+  ],
+  "bytecode": "0x6080604052348015600e575f80fd5b50604e80601a5f395ff3fe6080604052348015600e575f80fd5b5060015f5260205ff3fea264697066735822122097fd37ad69363f810c4f8a02a388dbf1ad8be217b8459aa424ec0ce6292a7f5f64736f6c63430008180033",
+  "deployedBytecode": "0x6080604052348015600e575f80fd5b5060015f5260205ff3fea264697066735822122097fd37ad69363f810c4f8a02a388dbf1ad8be217b8459aa424ec0ce6292a7f5f64736f6c63430008180033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

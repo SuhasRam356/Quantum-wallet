@@ -13,9 +13,30 @@ export default function Dashboard() {
   const { address } = useAccount();
   const { smartWalletAddress } = useSmartWallet();
   
-  const { data: userBalance } = useBalance({ address: smartWalletAddress });
-  
+  const [userBalance, setUserBalance] = useState({ value: 0n });
+  const [eoaBalance, setEoaBalance] = useState({ value: 0n });
   const [data, setData] = useState(null);
+  
+  useEffect(() => {
+    async function fetchBals() {
+      try {
+        const ethers = require('ethers');
+        const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL || 'http://127.0.0.1:8545');
+        if (smartWalletAddress) {
+          const bal = await provider.getBalance(smartWalletAddress);
+          setUserBalance({ value: bal });
+        }
+        if (address) {
+          const bal2 = await provider.getBalance(address);
+          setEoaBalance({ value: bal2 });
+        }
+      } catch(e) {}
+    }
+    fetchBals();
+    const interval = setInterval(fetchBals, 2000);
+    return () => clearInterval(interval);
+  }, [smartWalletAddress, address]);
+  
   const [loading, setLoading] = useState(true);
   const [funding, setFunding] = useState(false);
 
@@ -168,7 +189,7 @@ export default function Dashboard() {
           </h2>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '4px' }}>
             <span className="text-muted" style={{ fontSize: '0.9rem' }}>
-              {userBalance ? parseFloat(formatEther(userBalance.value)).toFixed(4) : '0.0000'} ETH
+              Vault: {userBalance ? parseFloat(formatEther(userBalance.value)).toFixed(4) : '0.0000'} ETH | Wallet: {eoaBalance ? parseFloat(formatEther(eoaBalance.value)).toFixed(4) : '0.0000'} ETH
             </span>
             <button className="btn-glow-small" onClick={handleFundGas} disabled={funding}>
               {funding ? 'Funding...' : 'Auto-Fund Gas'}

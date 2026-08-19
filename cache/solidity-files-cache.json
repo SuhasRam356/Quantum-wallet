@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "D:\\Quantum Wallet\\contracts\\QuantumSmartWallet.sol": {
-      "lastModificationDate": 1786589434839,
-      "contentHash": "0b6fefb637c53c419a372f6232325977",
+      "lastModificationDate": 1787106169210,
+      "contentHash": "4344b36c710c2b32308a3c3e415597be",
       "sourceName": "contracts/QuantumSmartWallet.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -600,6 +600,42 @@
       ],
       "artifacts": [
         "MockFalconPrecompile"
+      ]
+    },
+    "D:\\Quantum Wallet\\contracts\\MockPQCPrecompile.sol": {
+      "lastModificationDate": 1786719591318,
+      "contentHash": "4772438b1b32d307c749db3990843964",
+      "sourceName": "contracts/MockPQCPrecompile.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "cancun",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.24"
+      ],
+      "artifacts": [
+        "MockPQCPrecompile"
       ]
     }
   }

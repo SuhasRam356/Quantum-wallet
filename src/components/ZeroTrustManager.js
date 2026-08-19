@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable */
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';

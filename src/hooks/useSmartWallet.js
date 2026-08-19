@@ -5,14 +5,13 @@ import { FACTORY_ADDRESS, FACTORY_ABI } from '@/utils/constants';
 
 export function useSmartWallet() {
   const { address } = useAccount();
-  const publicClient = usePublicClient();
   const [smartWalletAddress, setSmartWalletAddress] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     async function computeAddress() {
-      if (!address || !FACTORY_ADDRESS || !publicClient) {
+      if (!address || !FACTORY_ADDRESS) {
         setSmartWalletAddress(null);
         setIsLoading(false);
         return;
@@ -29,7 +28,15 @@ export function useSmartWallet() {
         // and doesn't change when they generate a new PQC key. They can update the hash on-chain later.
         const pqcPubKeyHash = keccak256(stringToHex("placeholder_pqc_key_pending_registration"));
 
-        // Salt is 0 for the first wallet
+        // Use local fork for reading contract since the new factory is on the fork
+        const { createPublicClient, http } = await import('viem');
+        const { localhost } = await import('viem/chains');
+        const publicClient = createPublicClient({
+          chain: localhost,
+          transport: http('http://127.0.0.1:8545')
+        });
+
+        // Step 2: Compute the deterministic counterfactual address
         const computedAddr = await publicClient.readContract({
           address: FACTORY_ADDRESS,
           abi: FACTORY_ABI,
@@ -48,7 +55,7 @@ export function useSmartWallet() {
     }
 
     computeAddress();
-  }, [address, publicClient]);
+  }, [address]);
 
   return { smartWalletAddress, isLoading, error };
 }

@@ -4,7 +4,7 @@ const artifact = JSON.parse(fs.readFileSync('./artifacts/contracts/QuantumSmartW
 const factoryArtifact = JSON.parse(fs.readFileSync('./artifacts/contracts/QuantumSmartWalletFactory.sol/QuantumSmartWalletFactory.json', 'utf8'));
 
 const address = "0x6F0d410f7f0514A65fAB25431F61f4eDdf898c3A";
-const factoryAddress = "0x403B90554E54d7D30A09b11ecB0E95B16f34C68c";
+const factoryAddress = "0x264d7062E2bAECf7c329e95aCA41BaE1e0fFb83f";
 
 const content = `export const CONTRACT_ADDRESS = "${address}";
 export const FACTORY_ADDRESS = "${factoryAddress}";

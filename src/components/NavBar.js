@@ -28,22 +28,17 @@ export default function NavBar() {
     async function fetchIdentity() {
       if (address) {
         try {
-          const SUBGRAPH_URL = "https://api.studio.thegraph.com/query/1757567/quantum/version/latest";
-          const graphqlQuery = `
-            query {
-              identities(where: { id: "${address.toLowerCase()}" }) {
-                ipfsCid
-              }
+          const ethers = require('ethers');
+          const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL || 'http://127.0.0.1:8545');
+          if (smartWalletAddress) {
+            const abi = ['function userIdentity() view returns (string)'];
+            const contract = new ethers.Contract(smartWalletAddress, abi, provider);
+            try {
+              const id = await contract.userIdentity();
+              if (id) setIdentity(id);
+            } catch(e) {
+              // Not deployed yet or no identity
             }
-          `;
-          const res = await fetch(SUBGRAPH_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: graphqlQuery })
-          });
-          const data = await res.json();
-          if (data.data && data.data.identities && data.data.identities.length > 0) {
-            setIdentity(data.data.identities[0].ipfsCid);
           }
         } catch(e) {
             console.error(e);
@@ -53,7 +48,7 @@ export default function NavBar() {
       }
     }
     fetchIdentity();
-  }, [address]);
+  }, [address, smartWalletAddress]);
 
   const handleUpdateIdentity = async () => {
     if (!newIdentityCid) return;
@@ -77,11 +72,23 @@ export default function NavBar() {
         (userOpHash.startsWith('0x') ? userOpHash.slice(2) : userOpHash)
           .match(/.{1,2}/g).map(b => parseInt(b, 16))
       );
-      userOp.signature = await signMessageAsync({ message: { raw: hashBytes } });
-
+      let ecdsaSig = await signMessageAsync({ message: { raw: hashBytes } });
+      
+      // Normalize v value for OpenZeppelin ECDSA.recover
+      // MetaMask sometimes returns v=00 or 01, OpenZeppelin expects 1b (27) or 1c (28)
+      if (ecdsaSig.endsWith('00')) {
+        ecdsaSig = ecdsaSig.slice(0, -2) + '1b';
+      } else if (ecdsaSig.endsWith('01')) {
+        ecdsaSig = ecdsaSig.slice(0, -2) + '1c';
+      }
+      userOp.signature = ecdsaSig;
       const { signPayload, getStoredKeypair } = await import('@/utils/pqcKeyManager');
       const keypair = getStoredKeypair();
-      if (!keypair) throw new Error("No PQC keypair. Generate one on the Keys page.");
+      if (!keypair) {
+        alert("No PQC keypair. Please generate one on the Keys page first.");
+        setUpdatingIdentity(false);
+        return;
+      }
       const pqcSig = await signPayload(hashBytes);
 
       const submitRes = await fetch('/api/bundler/submit', {

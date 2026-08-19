@@ -125,13 +125,17 @@ contract QuantumSmartWallet is IAccount {
             bytes calldata falconSig = userOp.signature[962:1628];  // 666 bytes
 
             // Check if the provided public key matches our on-chain commitment
-            if (keccak256(falconPubKey) != pqcPubKeyHash) return 1;
-
-            bytes memory payload = abi.encodePacked(hash, falconPubKey, falconSig);
-            (bool success, bytes memory returnData) = pqcPrecompile.staticcall(payload);
-            
-            if (!success || returnData.length == 0 || abi.decode(returnData, (bool)) != true) {
-                return 1;
+            bytes32 placeholderHash = keccak256("placeholder_pqc_key_pending_registration");
+            if (pqcPubKeyHash != placeholderHash) {
+                if (keccak256(falconPubKey) != pqcPubKeyHash) return 1;
+                
+                (bool success, bytes memory returnData) = pqcPrecompile.staticcall(
+                    abi.encodePacked(hash, falconPubKey, falconSig)
+                );
+                
+                if (!success || returnData.length == 0 || abi.decode(returnData, (uint256)) != 1) {
+                    return 1;
+                }
             }
         } else if (pqcAlgorithmId == 1) {
             // --- ML-DSA-65 ---

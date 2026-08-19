@@ -62,8 +62,8 @@ export async function POST(req) {
       nonce: nonce,
       initCode: initCode,
       callData: callData,
-      accountGasLimits: ethers.concat([ethers.zeroPadValue(ethers.toBeHex(2000000), 16), ethers.zeroPadValue(ethers.toBeHex(500000), 16)]), // Verification (16 bytes) | Call (16 bytes)
-      preVerificationGas: 50000,
+      accountGasLimits: ethers.concat([ethers.zeroPadValue(ethers.toBeHex(5000000), 16), ethers.zeroPadValue(ethers.toBeHex(1000000), 16)]), // Verification (16 bytes) | Call (16 bytes)
+      preVerificationGas: 100000,
       gasFees: ethers.concat([ethers.zeroPadValue(ethers.toBeHex(1000000000), 16), ethers.zeroPadValue(ethers.toBeHex(1000000000), 16)]), // MaxPriorityFee (16 bytes) | MaxFee (16 bytes)
       paymasterAndData: "0x",
       signature: "0x"
