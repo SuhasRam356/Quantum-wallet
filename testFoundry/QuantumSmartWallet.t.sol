@@ -44,10 +44,11 @@ contract QuantumSmartWalletTest is Test {
     }
 
     /**
-     * @dev Fuzz test: Ensure that ANY signature less than 130 bytes fails validation.
+     * @dev Fuzz test: Ensure that ANY signature less than 731 bytes fails validation.
+     * (MTU-Optimized Handshake payload size)
      */
     function testFuzz_ValidateUserOpShortSignature(bytes calldata shortSig) public {
-        vm.assume(shortSig.length < 1628);
+        vm.assume(shortSig.length < 731);
         
         PackedUserOperation memory userOp = PackedUserOperation({
             sender: address(wallet),

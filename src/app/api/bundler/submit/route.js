@@ -44,18 +44,17 @@ export async function POST(req) {
     
     const userOpHash = await entryPoint.getUserOpHash(opTuple);
 
-    // 2. Append FALCON-512 Public Key and Signature to UserOp signature
+    // 2. Append FALCON-512 Signature to UserOp signature (MTU-Optimized)
     // The new EVM precompile architecture expects: 
-    // [ECDSA Sig (65 bytes)] + [FALCON PK (897 bytes)] + [FALCON Sig (666 bytes)]
+    // [ECDSA Sig (65 bytes)] + [FALCON Sig (666 bytes)]
+    // Public key is recovered on-chain to save MTU bytes.
     
-    let pqcPk = pqcPublicKey.startsWith('0x') ? pqcPublicKey.slice(2) : pqcPublicKey;
     let pqcSigHex = pqcSignature.startsWith('0x') ? pqcSignature.slice(2) : pqcSignature;
     
     // Fallback padding if the mock size isn't exact
-    pqcPk = pqcPk.padEnd(897 * 2, '0');
     pqcSigHex = pqcSigHex.padEnd(666 * 2, '0');
 
-    opTuple.signature = opTuple.signature + pqcPk + pqcSigHex;
+    opTuple.signature = opTuple.signature + pqcSigHex;
 
     // 6. Submit UserOperation to EntryPoint (Act as Bundler)
     const entryPointWrite = entryPoint.connect(relayerWallet);

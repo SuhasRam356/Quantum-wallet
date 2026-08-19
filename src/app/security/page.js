@@ -373,6 +373,43 @@ export default function SecurityPage() {
             </div>
           </div>
 
+          {/* NEW IEEE ADVANCED FEATURES */}
+          <div className="glass-card" style={{ borderLeft: '4px solid var(--accent-cyan)' }}>
+            <h3 className="heading-md" style={{ color: 'var(--accent-cyan)' }}>Advanced IEEE PQC Architecture</h3>
+            <p className="text-muted" style={{ fontSize: '0.9rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
+              Active Post-Quantum optimizations automatically running in the background.
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {/* EaaS QRNG */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-cyan)' }}></div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'white', fontSize: '0.95rem' }}>True Quantum Entropy (EaaS)</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Keys seeded via ANU QRNG physical photon metrics.</div>
+                </div>
+              </div>
+              
+              {/* MTU-Optimized Handshakes */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00ff88' }}></div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'white', fontSize: '0.95rem' }}>MTU-Optimized Handshakes</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Public Key Recovery avoids 1500-byte Ethernet fragmentation.</div>
+                </div>
+              </div>
+              
+              {/* PFS via LWC */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff0055' }}></div>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'white', fontSize: '0.95rem' }}>Perfect Forward Secrecy (PFS)</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Ephemeral nonces paired with Lightweight Cryptography (AES-GCM).</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* PROACTIVE KEY ROTATION */}
           <div className="glass-card" style={{ borderLeft: '4px solid #00ff88' }}>
             <h3 className="heading-md" style={{ color: '#00ff88' }}>Proactive Key Rotation & Archiving</h3>

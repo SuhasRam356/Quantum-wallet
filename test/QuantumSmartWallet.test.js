@@ -82,8 +82,8 @@ describe("QuantumSmartWallet", function () {
     falconSigBytes.set(expectedHashBytes, 0);
     const falconSignature = hre.ethers.hexlify(falconSigBytes);
     
-    // Concat signatures: ECDSA (65 bytes) + Falcon PK (897 bytes) + Falcon Sig (666 bytes)
-    const combinedSignature = userSignature + mockPqcPubKey.slice(2) + falconSignature.slice(2);
+    // Concat signatures: ECDSA (65 bytes) + Falcon Sig (666 bytes) [MTU-Optimized]
+    const combinedSignature = userSignature + falconSignature.slice(2);
 
     const userOp = {
       sender: await wallet.getAddress(),
@@ -108,7 +108,7 @@ describe("QuantumSmartWallet", function () {
     // Random 666 byte signature (won't match the embedded hash check)
     const falconSignature = hre.ethers.hexlify(hre.ethers.randomBytes(666));
     
-    const combinedSignature = userSignature + mockPqcPubKey.slice(2) + falconSignature.slice(2);
+    const combinedSignature = userSignature + falconSignature.slice(2);
 
     const userOp = {
       sender: await wallet.getAddress(),
@@ -126,7 +126,7 @@ describe("QuantumSmartWallet", function () {
     expect(result).to.equal(1);
   });
 
-  it("Should fail validateUserOp if signature length is less than 1628 bytes", async function () {
+  it("Should fail validateUserOp if signature length is less than 731 bytes", async function () {
     const userOpHash = hre.ethers.keccak256(hre.ethers.toUtf8Bytes("test user op hash"));
     const userSignature = await owner.signMessage(hre.ethers.getBytes(userOpHash)); // 65 bytes only
 

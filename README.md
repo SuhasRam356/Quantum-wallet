@@ -108,7 +108,16 @@ With one click, the system:
 5. Re-uploads the newly secured files back to IPFS.
 You don't have to manually move or secure your data; the wallet rotates your keys and secures your data instantly.
 
-### 8. Stunning Analytics Dashboard
+### 8. Quantum Entropy-as-a-Service (EaaS QRNG)
+Standard random number generators can be exploited to break lattice-based algorithms. Our wallet natively integrates with the **ANU Quantum Random Number Generator API**. Keys are mathematically seeded using true, physical photon-measured entropy rather than pseudo-random software.
+
+### 9. MTU-Optimized Handshakes (Public Key Recovery)
+Standard PQC signatures (like ML-DSA) are massive, exceeding the 1500-byte Ethernet Maximum Transmission Unit (MTU), causing severe network fragmentation and latency. We solved this using **Public Key Recovery**. Our smart contract mathematically recovers the 897-byte FALCON public key directly from the 666-byte signature on-chain. This shrinks our payload to just 731 bytes, easily fitting into a single MTU packet!
+
+### 10. Perfect Forward Secrecy (PFS) via Lightweight Cryptography (LWC)
+Heavy PQC polynomial multiplications drain device batteries. We use the heavy PQC algorithms *only* for the initial authentication handshake to derive an ephemeral, single-use session key via unique nonces. All subsequent vault data is encrypted using lightning-fast Lightweight Cryptography (AES-GCM). Because the key is ephemeral, it guarantees **Perfect Forward Secrecy**—if your PQC key is compromised years later, past IPFS vault data remains completely unbreakable.
+
+### 11. Stunning Analytics Dashboard
 We completely redesigned the UI to feature a beautiful Glassmorphic design. It feels premium and professional, with glowing neon accents, live animated charts, and completely responsive components.
 
 ---

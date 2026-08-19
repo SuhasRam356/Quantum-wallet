@@ -8,22 +8,21 @@ pragma solidity ^0.8.24;
 contract MockFalconPrecompile {
     /**
      * @dev The fallback function receives the staticcall payload:
-     *      [Hash (32 bytes)] + [FALCON PubKey (897 bytes)] + [FALCON Sig (666 bytes)]
+     *      [Hash (32 bytes)] + [FALCON Sig (666 bytes)] (MTU-Optimized)
      */
     fallback() external {
-        // Ensure payload length is correct (32 + 897 + 666 = 1595)
-        if (msg.data.length != 1595) {
+        // Ensure payload length is correct (32 + 666 = 698)
+        if (msg.data.length != 698) {
             _returnFalse();
             return;
         }
 
         bytes32 messageHash = bytes32(msg.data[0:32]);
-        // bytes memory pubKey = msg.data[32:929];
-        bytes memory sig = msg.data[929:1595];
+        bytes memory sig = msg.data[32:698];
 
         // Our pqcKeyManager.js mock sets the first 32 bytes of the signature 
         // to the keccak256 hash of the message to simulate successful verification.
-        bytes32 embeddedHash = bytes32(msg.data[929:961]);
+        bytes32 embeddedHash = bytes32(msg.data[32:64]);
 
         if (messageHash == embeddedHash) {
             _returnTrue();
